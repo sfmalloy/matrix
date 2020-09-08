@@ -20,12 +20,6 @@ public:
   using iterator = T*;
   using const_iterator = const T*;
 
-  using reference = T&;
-  using const_reference = const T&;
-
-  using size_type = size_t;
-  using difference_type = ptrdiff_t;
-
   // default ctor
   Matrix()
     : m_rows{0},
@@ -132,7 +126,7 @@ public:
 private:
   T* m_matrix;
 
-  size_t m_capacity, m_rows, m_cols, m_size;
+  size_t m_rows, m_cols, m_size;
 };
 
 // Scalar multiplication k * M
