@@ -13,8 +13,7 @@ main()
 
   Matrix<int> b = a;
 
-  for (auto it = b.begin(); it != b.end(); ++it)
-    std::cout << *it << ' ';
+  std::cout << b;
 
   return 0;
 }

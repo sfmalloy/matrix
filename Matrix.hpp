@@ -45,12 +45,13 @@ public:
 
   // copy ctor
   Matrix(const Matrix& m)
-    : m_rows{m.numRows()},
-      m_cols{m.numCols()},
+    : m_rows{m.rows()},
+      m_cols{m.cols()},
       m_size{m.size()},
       m_matrix{new T[m_size]}
   {
-    std::copy(m.begin(), m.end(), begin());
+    if (this != &m)
+      std::copy(m.begin(), m.end(), begin());
   }
 
   // dtor
@@ -60,26 +61,39 @@ public:
       delete[] m_matrix;
   }
 
+  Matrix&
+  operator=(const Matrix& m)
+  {
+    if (this != &m)
+    {
+      std::copy(m.begin(), m.end(), begin());
+      m_size = m.size();
+      m_rows = m.rows();
+      m_cols = m.cols();
+    }
+    return *this;
+  }
+
   size_t
-  numRows()
+  rows()
   {
     return m_rows;
   }
 
   size_t
-  numRows() const
+  rows() const
   {
     return m_rows;
   }
 
   size_t
-  numCols()
+  cols()
   {
     return m_cols;
   }
 
   size_t
-  numCols() const
+  cols() const
   {
     return m_cols;
   }
@@ -111,19 +125,25 @@ public:
   iterator
   end()
   {
-    return m_matrix + size();
+    return m_matrix + m_size;
   }
 
   const_iterator
   end() const
   {
-    return m_matrix + size();
+    return m_matrix + m_size;
   }
 
   void
   transpose()
   {
+    Matrix transposed(m_cols, m_rows);
     
+    for (size_t i = 0; i < m_rows; ++i)
+      for (size_t j = 0; j < m_cols; ++j)
+        transposed(i, j) = this(j, i);
+
+    this = transposed;
   }
 
   void
@@ -134,6 +154,12 @@ public:
 
   T&
   operator()(const size_t& row, const size_t& col)
+  {
+    return m_matrix[(m_cols * row) + col];
+  }
+
+  T&
+  operator()(const size_t& row, const size_t& col) const
   {
     return m_matrix[(m_cols * row) + col];
   }
@@ -183,6 +209,22 @@ operator*(const Matrix<T>& M, const int& k)
 {
   std::cout << "scalar multiplication by " << k << '\n';
   return M;
+}
+
+template <typename T>
+std::ostream&
+operator<<(std::ostream& output, const Matrix<T>& M)
+{
+  for (size_t i = 0; i < M.rows(); ++i)
+  {
+    for (size_t j = 0; j < M.cols(); ++j)
+    {
+      output << M(i, j) << ' ';
+    }
+    output << '\n';
+  }
+
+  return output;
 }
 
 
