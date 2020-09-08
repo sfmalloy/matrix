@@ -50,7 +50,8 @@ public:
   // dtor
   ~Matrix()
   {
-    delete[] this;
+    if (m_matrix != nullptr)
+      delete[] m_matrix;
   }
 
   size_t
@@ -98,7 +99,7 @@ public:
   void
   transpose()
   {
-
+    
   }
 
   void
