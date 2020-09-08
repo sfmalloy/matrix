@@ -2,6 +2,11 @@
 ///\name   Matrix.hpp
 ///\brief  Matrix class for performing various matrix operations.
 /**********************************************************************/
+// Macro guard
+#ifndef MATRIX_HPP
+#define MATRIX_HPP
+
+/**********************************************************************/
 // System includes
 #include <cstddef>
 #include <iostream>
@@ -42,9 +47,10 @@ public:
   Matrix(const Matrix& m)
     : m_rows{m.numRows()},
       m_cols{m.numCols()},
-      m_size{m.size()}
+      m_size{m.size()},
+      m_matrix{new T[m_size]}
   {
-    
+    std::copy(m.begin(), m.end(), begin());
   }
 
   // dtor
@@ -61,13 +67,31 @@ public:
   }
 
   size_t
+  numRows() const
+  {
+    return m_rows;
+  }
+
+  size_t
   numCols()
   {
     return m_cols;
   }
 
   size_t
+  numCols() const
+  {
+    return m_cols;
+  }
+
+  size_t
   size()
+  {
+    return m_size;
+  }
+
+  size_t
+  size() const
   {
     return m_size;
   }
@@ -108,11 +132,16 @@ public:
 
   }
 
+  T&
+  operator()(const size_t& row, const size_t& col)
+  {
+    return m_matrix[(m_cols * row) + col];
+  }
+
   // Matrix addition
   Matrix
   operator+(const Matrix<T>& other)
   {
-    std::cout << "matrix addition\n";
     return *this;
   }
 
@@ -123,11 +152,19 @@ public:
     std::cout << "matrix multiplication\n";
     return *this;
   }
+
+  bool
+  operator==(const Matrix<T>& other)
+  {
+    return false;
+  }
   
 private:
-  T* m_matrix;
+  size_t m_rows;
+  size_t m_cols;
+  size_t m_size;
 
-  size_t m_rows, m_cols, m_size;
+  T* m_matrix;
 };
 
 // Scalar multiplication k * M
@@ -149,3 +186,4 @@ operator*(const Matrix<T>& M, const int& k)
 }
 
 
+#endif // MATRIX_HPP
