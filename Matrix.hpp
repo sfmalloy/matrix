@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <iostream>
 #include <iterator>
+#include <algorithm>
 
 /**********************************************************************/
 // Local includes
@@ -141,15 +142,16 @@ public:
     
     for (size_t i = 0; i < m_rows; ++i)
       for (size_t j = 0; j < m_cols; ++j)
-        transposed(i, j) = this(j, i);
+        transposed(j, i) = (*this)(i, j);
 
-    this = transposed;
+    *this = transposed;
   }
 
   void
   swapRows(size_t r1, size_t r2)
   {
-
+    for (size_t j = 0; j < m_cols; ++j)
+      std::swap((*this)(r1, j), (*this)(r2, j));
   }
 
   T&
@@ -164,27 +166,85 @@ public:
     return m_matrix[(m_cols * row) + col];
   }
 
+
   // Matrix addition
-  Matrix
-  operator+(const Matrix<T>& other)
+  Matrix&
+  operator+=(const Matrix& other)
   {
+    if (this->rows() == other.rows() && this->cols() == other.cols())
+    {
+      for (size_t i = 0; i < other.rows(); ++i)
+        for (size_t j = 0; j < other.cols(); ++j)
+          (*this)(i, j) += other(i, j);
+    }
+
     return *this;
   }
 
-  // Matrix multiplication
+  // Matrix addition
   Matrix
-  operator*(const Matrix<T>& other)
+  operator+(const Matrix& other) const
   {
-    std::cout << "matrix multiplication\n";
+    return Matrix(*this) += other;
+  }
+
+  // Matrix subtraction
+  Matrix&
+  operator-=(const Matrix& other)
+  {
+    if (this->rows() == other.rows() && this->cols() == other.cols())
+    {
+      for (size_t i = 0; i < other.rows(); ++i)
+        for (size_t j = 0; j < other.cols(); ++j)
+          (*this)(i, j) -= other(i, j);
+    }
+
+    return *this;
+  }
+
+  // Matrix subtraction
+  Matrix
+  operator-(const Matrix& other) const
+  {
+    return Matrix(*this) -= other;
+  }
+
+  // TODO
+  // Matrix multiplication
+  Matrix&
+  operator*=(const Matrix& other)
+  {
+    if (this->cols())
+    return *this;
+  }
+
+   // Matrix multiplication
+  Matrix
+  operator*(const Matrix& other) const
+  {
+    return (*this) *= other;
+  }
+
+  // TODO
+  // Scalar *=
+  Matrix
+  operator*=(const T& other)
+  {
     return *this;
   }
 
   bool
-  operator==(const Matrix<T>& other)
+  operator==(const Matrix& other)
   {
     return false;
   }
   
+  bool
+  operator==(const Matrix& other) const
+  {
+    return false;
+  }
+
 private:
   size_t m_rows;
   size_t m_cols;
@@ -196,18 +256,16 @@ private:
 // Scalar multiplication k * M
 template <typename T>
 Matrix<T>
-operator*(const int& k, const Matrix<T>& M)
+operator*(const T& k, const Matrix<T>& M)
 {
-  std::cout << "scalar multiplication by " << k << '\n';
   return M;
 }
 
 // Scalar multiplication M * k
 template <typename T>
 Matrix<T>
-operator*(const Matrix<T>& M, const int& k)
+operator*(const Matrix<T>& M, const T& k)
 {
-  std::cout << "scalar multiplication by " << k << '\n';
   return M;
 }
 
@@ -218,9 +276,7 @@ operator<<(std::ostream& output, const Matrix<T>& M)
   for (size_t i = 0; i < M.rows(); ++i)
   {
     for (size_t j = 0; j < M.cols(); ++j)
-    {
       output << M(i, j) << ' ';
-    }
     output << '\n';
   }
 
