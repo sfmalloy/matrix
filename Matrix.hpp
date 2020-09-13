@@ -67,11 +67,16 @@ public:
   {
     if (this != &m)
     {
+      if (m_matrix != nullptr)
+        delete[] m_matrix;
+      m_matrix = new T[m.rows() * m.cols()];
+
       std::copy(m.begin(), m.end(), begin());
       m_size = m.size();
       m_rows = m.rows();
       m_cols = m.cols();
     }
+
     return *this;
   }
 
@@ -187,7 +192,7 @@ public:
   {
     return Matrix(*this) += other;
   }
-
+  
   // Matrix subtraction
   Matrix&
   operator-=(const Matrix& other)
@@ -209,12 +214,21 @@ public:
     return Matrix(*this) -= other;
   }
 
-  // TODO
   // Matrix multiplication
   Matrix&
   operator*=(const Matrix& other)
   {
-    if (this->cols())
+    if (this->cols() == other.rows())
+    {
+      Matrix result{this->rows(), other.cols()};
+      for (size_t i = 0; i < result.rows(); ++i)
+        for (size_t j = 0; j < result.cols(); ++j)
+          for (size_t k = 0; k < this->cols(); ++k)
+            result(i, j) += (*this)(i, k) * other(k, j);
+        
+      *this = result;
+    }
+
     return *this;
   }
 
@@ -222,7 +236,7 @@ public:
   Matrix
   operator*(const Matrix& other) const
   {
-    return (*this) *= other;
+    return Matrix(*this) *= other;
   }
 
   // TODO
