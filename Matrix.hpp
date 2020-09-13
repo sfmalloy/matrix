@@ -5,8 +5,6 @@
 // Macro guard
 #ifndef MATRIX_HPP
 #define MATRIX_HPP
-/**********************************************************************/
-// Namespace declaration
 
 /**********************************************************************/
 // System includes
@@ -14,9 +12,6 @@
 #include <iostream>
 #include <iterator>
 #include <algorithm>
-
-/**********************************************************************/
-// Local includes
 
 /**********************************************************************/
 namespace mat 
@@ -162,6 +157,24 @@ namespace mat
         std::swap((*this)(r1, j), (*this)(r2, j));
     }
 
+    // Adds factor * r1 to r2, changing the values in r2
+    void
+    addRows(size_t r1, size_t r2, T factor = T(1))
+    {
+      for (size_t j = 0; j < this->cols(); ++j)
+        (*this)(r2, j) += factor * (*this)(r1, j);
+    }
+
+    void 
+    multiplyRow(size_t r, T factor)
+    {
+      for (size_t j = 0; j < this->cols(); ++j)
+      {
+        if ((*this)(r, j) != 0)
+          (*this)(r, j) *= factor;
+      }
+    }
+
     T&
     operator()(const size_t& row, const size_t& col)
     {
@@ -285,6 +298,24 @@ namespace mat
       return *this == other;
     }
 
+    bool
+    isRowEchelonForm()
+    {
+      for (size_t i = 0; i < this->rows(); ++i)
+      {
+        for (size_t j = 0; j < this->cols(); ++j)
+        {
+          T elem = (*this)(i, j);
+          if (elem == 1)
+            break;
+          else if (elem != 0)
+            return false;
+        }
+      }
+
+      return true;   
+    }
+
   private:
     size_t m_rows;
     size_t m_cols;
@@ -295,19 +326,63 @@ namespace mat
   /**********************************************************************/
   // Global functions
 
-  // TODO
+  // Gaussian elimination
   template <typename T>
   Matrix<T>
-  rowEchelon(Matrix<T>& A)
+  rowEchelon(Matrix<T> A)
   {
+    size_t currTopRow = 0;
+
+    if (A.isRowEchelonForm())
+      return A;
+
+    while (currTopRow < A.rows())
+    {
+      size_t leftmostNonZeroRow = currTopRow;
+      size_t leftmostNonZeroCol = 0;
+      bool found = false;
+      for (size_t i = 0; i < A.cols(); ++i)
+      {
+        for (size_t j = currTopRow; j < A.rows(); ++j)
+        {
+          if (A(j, i) != 0)
+          {
+            leftmostNonZeroRow = j;
+            leftmostNonZeroCol = i;
+            found = true;
+            break;
+          }
+        }
+        if (found)
+          break;
+      }
+      
+      if (leftmostNonZeroRow != 0)
+        A.swapRows(currTopRow, leftmostNonZeroRow);
+
+      T leadingElement = A(currTopRow, leftmostNonZeroCol);
+      if (leadingElement != 1 && leadingElement != 0)
+        A.multiplyRow(currTopRow, 1 / leadingElement);
+
+      for (size_t i = currTopRow + 1; i < A.rows(); ++i)
+      {
+        T elemBelow = A(i, leftmostNonZeroCol);
+        if (elemBelow != 0)
+          A.addRows(currTopRow, i, -elemBelow);
+      }
+
+      ++currTopRow;
+    }
+
     return A;
   }
 
   // TODO
   template <typename T>
   Matrix<T>
-  reducedRowEchelon(Matrix<T>& A)
+  reducedRowEchelon(Matrix<T> A)
   {
+    A = rowEchelon(A);
     return A;
   }
 
@@ -332,5 +407,6 @@ namespace mat
 
     return output;
   }
-}
+} // namespace mat
+
 #endif // MATRIX_HPP
