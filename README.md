@@ -2,7 +2,7 @@
 Matrix class with operations for C++
 
 ### Requirements
-- g++ compiler
+- g++
 - make
 
 ### Compiling and running
