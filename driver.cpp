@@ -1,3 +1,6 @@
+// This driver is for testing purposes and is not complete
+// or intented for regular use.
+
 #include <iostream>
 #include <random>
 #include <vector>
@@ -40,18 +43,16 @@ fillSpecific(mat::Matrix<T>& M, std::vector<T>& elems)
 int
 main()
 {
-  mat::Matrix<Type> A(5, 4);
+  mat::Matrix<Type> A(3, 4);
   std::vector<Type> v {
-    -1,-9,-8,1,
-    1,2,-8,5,
-    -9,5,7,1,
-    5,-5,-7,3,
-    -6,7,5,3
+    2,4,-6,30,
+    -1,-1,4,-18,
+    -2,-6,5,-28
   };
-  fillRandom(A);
+  fillSpecific(A, v);
 
   std::cout << "Matrix A:\n" <<  A << '\n';
   std::cout << "Row Echelon A:\n" << mat::rowEchelon(A) << '\n';
-  // std::cout << "Reduced row echelon A:\n" << mat::reducedRowEchelon(A) << '\n';
+  std::cout << "Reduced row echelon A:\n" << mat::reducedRowEchelon(A) << '\n';
   return 0;
 }

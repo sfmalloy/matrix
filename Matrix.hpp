@@ -1,6 +1,6 @@
 ///\author Sean Malloy
 ///\name   Matrix.hpp
-///\brief  Matrix class for performing various matrix operations.
+///\brief  Generic Matrix class for performing various matrix operations.
 /**********************************************************************/
 // Macro guard
 #ifndef MATRIX_HPP
@@ -318,13 +318,17 @@ namespace mat
     bool
     isRowEchelonForm()
     {
+      size_t prevCol = 0;
       for (size_t i = 0; i < m_rows; ++i)
       {
         for (size_t j = 0; j < m_cols; ++j)
         {
           T elem = (*this)(i, j);
-          if (elem == 1)
+          if (elem == 1 && j > prevCol)
+          {
+            prevCol = j;
             break;
+          }
           else if (elem != 0)
             return false;
         }
@@ -405,6 +409,28 @@ namespace mat
   reducedRowEchelon(Matrix<T> A)
   {
     A = rowEchelon(A);
+
+    for (size_t currBottomRow = A.rows() - 1; currBottomRow > 0; --currBottomRow)
+    {
+      // check to see if row is all zeros
+      bool allZeros = true;
+      size_t leadingOne = 0;
+      for (size_t j = 0; j < A.cols(); ++j)
+      {
+        if (A(currBottomRow, j) != 0)
+        {
+          allZeros = false;
+          leadingOne = j;
+          break;
+        }
+      }
+
+      if (!allZeros)
+      {
+        for (size_t i = 0; i < currBottomRow; ++i)
+          A.addRows(currBottomRow, i, -A(i, leadingOne));
+      }
+    }
 
     return A;
   }
