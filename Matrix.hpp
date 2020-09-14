@@ -12,6 +12,11 @@
 #include <iostream>
 #include <iterator>
 #include <algorithm>
+#include <limits>
+#include <cmath>
+
+// REMOVE BEFORE RELEASE
+#include <cstdio>
 
 /**********************************************************************/
 namespace mat 
@@ -159,16 +164,28 @@ namespace mat
 
     // Adds factor * r1 to r2, changing the values in r2
     void
-    addRows(size_t r1, size_t r2, T factor = T(1))
+    addRows(size_t r1, size_t r2, T factor)
     {
-      for (size_t j = 0; j < this->cols(); ++j)
-        (*this)(r2, j) += factor * (*this)(r1, j);
+      for (size_t j = 0; j < m_cols; ++j) {
+        // When using floats, this if statement is required so
+        // rounding errors don't occur.
+        T a = (*this)(r2, j);
+        T b = -factor * (*this)(r1, j);
+        T diff = std::fabs(a - b);
+        
+        // See https://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
+        if (diff <= std::numeric_limits<T>::epsilon() * std::fabs(a + b) * 2 
+            || std::fabs(a - b) < std::numeric_limits<T>::min())
+          (*this)(r2, j) = 0;
+        else
+          (*this)(r2, j) += factor * (*this)(r1, j);
+      }
     }
 
     void 
     multiplyRow(size_t r, T factor)
     {
-      for (size_t j = 0; j < this->cols(); ++j)
+      for (size_t j = 0; j < m_cols; ++j)
       {
         if ((*this)(r, j) != 0)
           (*this)(r, j) *= factor;
@@ -191,7 +208,7 @@ namespace mat
     Matrix&
     operator+=(const Matrix& other)
     {
-      if (this->rows() == other.rows() && this->cols() == other.cols())
+      if (m_rows == other.rows() && m_cols == other.cols())
       {
         for (size_t i = 0; i < other.rows(); ++i)
           for (size_t j = 0; j < other.cols(); ++j)
@@ -212,7 +229,7 @@ namespace mat
     Matrix&
     operator-=(const Matrix& other)
     {
-      if (this->rows() == other.rows() && this->cols() == other.cols())
+      if (m_rows == other.rows() && m_cols == other.cols())
       {
         for (size_t i = 0; i < other.rows(); ++i)
           for (size_t j = 0; j < other.cols(); ++j)
@@ -233,9 +250,9 @@ namespace mat
     Matrix&
     operator*=(const Matrix& other)
     {
-      if (this->cols() == other.rows())
+      if (m_cols == other.rows())
       {
-        Matrix result{this->rows(), other.cols()};
+        Matrix result(m_rows, other.cols());
         for (size_t i = 0; i < result.rows(); ++i)
           for (size_t j = 0; j < result.cols(); ++j)
             for (size_t k = 0; k < this->cols(); ++k)
@@ -281,11 +298,11 @@ namespace mat
     bool
     operator==(const Matrix& other)
     {
-      if (this->rows() != other.rows() || this->cols() != other.cols())
+      if (m_rows != other.rows() || m_cols != other.cols())
         return false;
 
-      for (size_t i = 0; i < this->rows(); ++i)
-        for (size_t j = 0; j < this->cols(); ++j)
+      for (size_t i = 0; i < m_rows; ++i)
+        for (size_t j = 0; j < m_cols; ++j)
           if ((*this)(i, j) != other(i, j))
             return false;
 
@@ -301,9 +318,9 @@ namespace mat
     bool
     isRowEchelonForm()
     {
-      for (size_t i = 0; i < this->rows(); ++i)
+      for (size_t i = 0; i < m_rows; ++i)
       {
-        for (size_t j = 0; j < this->cols(); ++j)
+        for (size_t j = 0; j < m_cols; ++j)
         {
           T elem = (*this)(i, j);
           if (elem == 1)
@@ -331,47 +348,52 @@ namespace mat
   Matrix<T>
   rowEchelon(Matrix<T> A)
   {
-    size_t currTopRow = 0;
-
     if (A.isRowEchelonForm())
       return A;
 
-    while (currTopRow < A.rows())
+    for (size_t currTopRow = 0; currTopRow < A.rows(); ++currTopRow)
     {
-      size_t leftmostNonZeroRow = currTopRow;
-      size_t leftmostNonZeroCol = 0;
+      size_t currRow = currTopRow;
+      size_t currCol = 0;
+      
       bool found = false;
-      for (size_t i = 0; i < A.cols(); ++i)
+      for (size_t j = 0; j < A.cols(); ++j)
       {
-        for (size_t j = currTopRow; j < A.rows(); ++j)
+        for (size_t i = currTopRow; i < A.rows(); ++i)
         {
-          if (A(j, i) != 0)
+          if (A(i, j) != 0)
           {
-            leftmostNonZeroRow = j;
-            leftmostNonZeroCol = i;
             found = true;
+            currRow = i;
+            currCol = j;
             break;
           }
         }
+
         if (found)
           break;
       }
-      
-      if (leftmostNonZeroRow != 0)
-        A.swapRows(currTopRow, leftmostNonZeroRow);
 
-      T leadingElement = A(currTopRow, leftmostNonZeroCol);
-      if (leadingElement != 1 && leadingElement != 0)
-        A.multiplyRow(currTopRow, 1 / leadingElement);
+      if (!found)
+        return A;
 
-      for (size_t i = currTopRow + 1; i < A.rows(); ++i)
+      if (currRow != currTopRow)
       {
-        T elemBelow = A(i, leftmostNonZeroCol);
-        if (elemBelow != 0)
-          A.addRows(currTopRow, i, -elemBelow);
+        A.swapRows(currRow, currTopRow);
+        currRow = currTopRow;
       }
 
-      ++currTopRow;
+      T leadingElement = A(currRow, currCol);
+      if (leadingElement != 1)
+        A.multiplyRow(currRow, 1 / leadingElement);
+
+      for (size_t i = currRow + 1; i < A.rows(); ++i)
+      {
+        // std::cout << i << '\n';
+        T elem = A(i, currCol);
+        if (elem != 0)
+          A.addRows(currRow, i, -elem);
+      }
     }
 
     return A;
@@ -383,6 +405,7 @@ namespace mat
   reducedRowEchelon(Matrix<T> A)
   {
     A = rowEchelon(A);
+
     return A;
   }
 
