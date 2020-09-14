@@ -7,7 +7,7 @@
 
 #include "Matrix.hpp"
 
-using Type = double;
+using Type = float;
 
 template <typename T>
 void
@@ -43,9 +43,12 @@ fillSpecific(mat::Matrix<T>& M, std::vector<T>& elems)
 int
 main()
 {
-  mat::Matrix<Type> A(3, 4);
+  mat::Matrix<Type> A(6, 4);
   std::vector<Type> v 
   {
+    2,4,-6,30,
+    -1,-1,4,-18,
+    -2,-6,5,-28,
     2,4,-6,30,
     -1,-1,4,-18,
     -2,-6,5,-28

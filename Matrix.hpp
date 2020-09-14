@@ -15,9 +15,6 @@
 #include <limits>
 #include <cmath>
 
-// REMOVE BEFORE RELEASE
-#include <cstdio>
-
 /**********************************************************************/
 namespace mat 
 {
@@ -423,7 +420,7 @@ namespace mat
   Matrix<T>
   transpose(Matrix<T>& A)
   {
-    Matrix transposed(A.rows(), A.cols());
+    Matrix<T> transposed(A.rows(), A.cols());
     
     for (size_t i = 0; i < A.rows(); ++i)
       for (size_t j = 0; j < A.cols(); ++j)
