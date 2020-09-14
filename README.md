@@ -6,4 +6,7 @@ Matrix class with operations for C++
 - make
 
 ### Compiling and running
-Currently there is no driver, but if you make your own feel free to use the included Makefile. If you want the Makefile to work out of the box be sure you are have g++ installed as well as a file called driver.cpp. Eventually, I will make a driver for all to use that will act as sort of an "interpreter".
+Interpreter (main.cpp) in planning stages.
+
+### Using matrix.hpp
+You can choose to either use main.cpp to do matrix operations, or use matrix.hpp in your own C++ programs. It is a single header, just include it and you're set. Documentation within matrix.hpp coming later.
