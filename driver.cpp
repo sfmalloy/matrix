@@ -44,15 +44,19 @@ int
 main()
 {
   mat::Matrix<Type> A(3, 4);
-  std::vector<Type> v {
+  std::vector<Type> v 
+  {
     2,4,-6,30,
     -1,-1,4,-18,
     -2,-6,5,-28
   };
+
   fillSpecific(A, v);
 
   std::cout << "Matrix A:\n" <<  A << '\n';
   std::cout << "Row Echelon A:\n" << mat::rowEchelon(A) << '\n';
   std::cout << "Reduced row echelon A:\n" << mat::reducedRowEchelon(A) << '\n';
+  
+  A = mat::transpose(A);
   return 0;
 }

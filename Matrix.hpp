@@ -144,18 +144,6 @@ namespace mat
     }
 
     void
-    transpose()
-    {
-      Matrix transposed(m_cols, m_rows);
-      
-      for (size_t i = 0; i < m_rows; ++i)
-        for (size_t j = 0; j < m_cols; ++j)
-          transposed(j, i) = (*this)(i, j);
-
-      *this = transposed;
-    }
-
-    void
     swapRows(size_t r1, size_t r2)
     {
       for (size_t j = 0; j < m_cols; ++j)
@@ -393,7 +381,6 @@ namespace mat
 
       for (size_t i = currRow + 1; i < A.rows(); ++i)
       {
-        // std::cout << i << '\n';
         T elem = A(i, currCol);
         if (elem != 0)
           A.addRows(currRow, i, -elem);
@@ -403,7 +390,7 @@ namespace mat
     return A;
   }
 
-  // TODO
+  // Gauss-Jordan elimination
   template <typename T>
   Matrix<T>
   reducedRowEchelon(Matrix<T> A)
@@ -412,7 +399,6 @@ namespace mat
 
     for (size_t currBottomRow = A.rows() - 1; currBottomRow > 0; --currBottomRow)
     {
-      // check to see if row is all zeros
       bool allZeros = true;
       size_t leadingOne = 0;
       for (size_t j = 0; j < A.cols(); ++j)
@@ -426,13 +412,24 @@ namespace mat
       }
 
       if (!allZeros)
-      {
         for (size_t i = 0; i < currBottomRow; ++i)
           A.addRows(currBottomRow, i, -A(i, leadingOne));
-      }
     }
 
     return A;
+  }
+
+  template <typename T>
+  Matrix<T>
+  transpose(Matrix<T>& A)
+  {
+    Matrix transposed(A.rows(), A.cols());
+    
+    for (size_t i = 0; i < A.rows(); ++i)
+      for (size_t j = 0; j < A.cols(); ++j)
+        transposed(j, i) = A(i, j);
+
+    return transposed;
   }
 
   // TODO
