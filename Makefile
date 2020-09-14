@@ -11,22 +11,23 @@
 CXX      := g++
 
 # C++ compiler flags
-CXXFLAGS := -g -Wall
-# CXXFLAGS := -O3 -Wall
+# CXXFLAGS := -g -Wall
+CXXFLAGS := -O3 -Wall
 
 #############################################################
 # Rules                                                     #
 #############################################################
 
-driver: driver.cpp 
+main.out: main.cpp 
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 #############################################################
 
-.PHONY: driver
+.PHONY: *.out
 
 clean :
-	@$(RM) driver
+	@$(RM) *.out
+	@$(RM) *.exe
 	@$(RM) *.o
 	@$(RM) *~ 
 
