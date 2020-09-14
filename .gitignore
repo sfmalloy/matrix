@@ -1,3 +1,5 @@
-driver
+driver.cpp
+driver.out
+main.out
 *.o
 *.vscode
