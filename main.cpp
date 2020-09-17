@@ -8,6 +8,8 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
+#include <algorithm>
+#include <random>
 
 /**********************************************************************/
 // Local includes
@@ -15,15 +17,15 @@
 
 /**********************************************************************/
 // Using declarations
-using matrix_t = float;
+using elem_t = float;
 using tokenlist_t = std::vector<std::string>;
 
 /**********************************************************************/
 // Global variables
-std::unordered_map<std::string, mat::matrix<matrix_t>> g_matrices;
+std::unordered_map<std::string, mat::matrix<elem_t>> g_matrices;
 
 /**********************************************************************/
-// Forward declarations
+// Command declarations
 
 void
 printMatrix(tokenlist_t tokens);
@@ -51,13 +53,27 @@ multiplyRow(tokenlist_t tokens);
 
 void
 equalExpression(tokenlist_t tokens);
+/**********************************************************************/
+// Helper function declarations
+
+template <typename T>
+mat::matrix<T>
+getIdentity(size_t size);
+
+template <typename T>
+mat::matrix<T>
+getRandom(size_t rows, size_t cols, int lower, int upper);
+
+template <typename T>
+mat::matrix<T>
+getRandom(size_t rows, size_t cols, int lower, int upper, unsigned long seed);
 
 /**********************************************************************/
 
 int
 main()
 {
-  g_matrices = std::unordered_map<std::string, mat::matrix<matrix_t>>();
+  g_matrices = std::unordered_map<std::string, mat::matrix<elem_t>>();
 
   std::string line;
   while (std::getline(std::cin, line))
@@ -72,7 +88,7 @@ main()
     if (tokens[0] == "exit")
       exit(0);
     else if (tokens[0] == "reset")
-      g_matrices = std::unordered_map<std::string, mat::matrix<matrix_t>>();
+      g_matrices = std::unordered_map<std::string, mat::matrix<elem_t>>();
     else if (tokens[0] == "print")
       printMatrix(tokens);
     else if (tokens[0] == "transpose")
@@ -100,7 +116,16 @@ main()
 void
 printMatrix(tokenlist_t tokens)
 {
+  std::string name = tokens[1];
+  if (g_matrices.find(name) != g_matrices.end())
+  {
+    mat::matrix<elem_t> A = g_matrices.at(name);
+    std::cout << A;
+  }
+  else
+    std::cout << "Matrix not found\n";
   
+  std::cout << '\n';
 }
 
 void
@@ -148,7 +173,71 @@ multiplyRow(tokenlist_t tokens)
 void
 equalExpression(tokenlist_t tokens)
 {
+  std::string name = tokens[0];
+  std::string keyword = tokens[2];
+  if (keyword == "identity")
+  {
+    size_t size = std::stoi(tokens[3]);
+    g_matrices[name] = getIdentity<elem_t>(size);
+  }
+  else if (keyword == "random")
+  {
+    size_t rows = std::stoul(tokens[3]);
+    size_t cols = std::stoul(tokens[4]);
+    size_t lowerBound = std::stoul(tokens[5]);
+    size_t upperBound = std::stoul(tokens[6]);
+    
+    if (tokens.size() >= 8)
+    {
+      unsigned long seed = std::stoul(tokens[7]);
+      g_matrices[name] = getRandom<elem_t>(rows, cols, lowerBound, upperBound, seed);
+    }
+    else
+      g_matrices[name] = getRandom<elem_t>(rows, cols, lowerBound, upperBound);
 
+  }
+  else if (keyword == "custom")
+  {
+    
+  }
+  else
+  {
+    if (g_matrices.find(keyword) != g_matrices.end())
+      g_matrices[name] = g_matrices[keyword];
+  }
+}
+
+template <typename T>
+mat::matrix<T>
+getIdentity(size_t size)
+{
+  mat::matrix<T> A(size, size);
+  for (size_t i = 0; i < size; ++i)
+    A(i, i) = 1;
+
+  return A;
+}
+
+template <typename T>
+mat::matrix<T>
+getRandom(size_t rows, size_t cols, int lower, int upper)
+{
+  std::random_device seed;
+  return getRandom<T>(rows, cols, lower, upper, seed());
+}
+
+template <typename T>
+mat::matrix<T>
+getRandom(size_t rows, size_t cols, int lower, int upper, unsigned long seed)
+{
+  std::mt19937 gen(seed);
+  std::uniform_int_distribution<int> dist(lower, upper);
+  
+  mat::matrix<T> A(rows, cols);
+  for (T& elem : A)
+    elem = dist(gen);
+
+  return A;
 }
 
 /*
@@ -157,11 +246,8 @@ equalExpression(tokenlist_t tokens)
  * Equals operations
  * To print any result after doing an equals operation, use print command
  * <name> = identity <order>
- * <name> = random <rows> <cols> [<lower_bound>] [<upper_bound>]
- * <name> = custom <rows> <cols> EOL
- *    row0: <value00>,<value01>,...,<value0N>
- *    ...
- *    rowM: <valueM0>,<valueM1>,...,<valueMN>
+ * <name> = random <rows> <cols> <lower_bound> <upper_bound> [<seed>]
+ * <name> = [[0,1,2,3...N],[0,1,2,3,...N],...]
  * <name> = <command_that_returns_matrix>
  * <name> = <mathematical_expression>
  * <name> = <other_name>
