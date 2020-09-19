@@ -144,6 +144,8 @@ namespace mat
     void
     swapRows(size_t r1, size_t r2)
     {
+      if (r1 >= m_rows || r2 >= m_rows)
+        return;      
       for (size_t j = 0; j < m_cols; ++j)
         std::swap((*this)(r1, j), (*this)(r2, j));
     }
@@ -152,7 +154,10 @@ namespace mat
     void
     addRows(size_t r1, size_t r2, T scalar = T(1))
     {
-      for (size_t j = 0; j < m_cols; ++j) {
+      if (r1 >= m_rows || r2 >= m_rows)
+        return;
+      for (size_t j = 0; j < m_cols; ++j) 
+      {
         // When using floats, this if statement is required so
         // rounding errors don't occur.
         T a = (*this)(r2, j);
@@ -167,6 +172,8 @@ namespace mat
           (*this)(r2, j) += scalar * (*this)(r1, j);
       }
     }
+
+// transpose, inverse, row_echelon, reduced_row_echelon, keyword in g_matrices
 
     void 
     multiplyRow(size_t r, T scalar)
@@ -421,7 +428,7 @@ namespace mat
   matrix<T>
   transpose(matrix<T>& A)
   {
-    matrix<T> transposed(A.rows(), A.cols());
+    matrix<T> transposed(A.cols(), A.rows());
     
     for (size_t i = 0; i < A.rows(); ++i)
       for (size_t j = 0; j < A.cols(); ++j)
