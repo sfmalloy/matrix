@@ -82,6 +82,7 @@ getRandom(size_t rows, size_t cols, int lower, int upper, unsigned long seed);
 
 /**********************************************************************/
 
+// TODO allow for file input
 int
 main()
 {
@@ -223,11 +224,14 @@ multiplyRow(const tokenlist_t& tokens)
     g_matrices.at(name).multiplyRow(row, scalar);
 }
 
+
+// FIXME check size of tokens to prevent seg faults when giving too few args
 template <typename T>
 void
 equalExpression(const tokenlist_t& tokens)
 {
-  std::vector<std::string> commands {
+  std::vector<std::string> commands
+  {
     "transpose",
     "inverse",
     "row_echelon",
@@ -317,8 +321,9 @@ mat::matrix<T>
 getIdentity(size_t size)
 {
   mat::matrix<T> A(size, size);
-  for (size_t i = 0; i < size; ++i)
-    A(i, i) = 1;
+  for (size_t i = 0; i < A.rows(); ++i)
+    for (size_t j = 0; j < A.cols(); ++j)
+      A(i, j) = i == j;
 
   return A;
 }

@@ -11,8 +11,12 @@
 CXX      := g++
 
 # C++ compiler flags
-CXXFLAGS := -g -Wall
-# CXXFLAGS := -O3 -Wall
+
+# Debugging
+# CXXFLAGS := -g -Wall
+
+# Release
+CXXFLAGS := -O3 -Wall
 
 #############################################################
 # Rules                                                     #

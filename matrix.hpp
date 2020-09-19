@@ -426,7 +426,7 @@ namespace mat
 
   template <typename T>
   matrix<T>
-  transpose(matrix<T>& A)
+  transpose(const matrix<T>& A)
   {
     matrix<T> transposed(A.cols(), A.rows());
     
@@ -442,7 +442,31 @@ namespace mat
   matrix<T>
   inverse(matrix<T>& A)
   {
-    return A;
+    if (A.rows() != A.cols())
+    {
+      std::cerr << "Inverse does not exist.\n";
+      return A;
+    }
+
+    matrix<T> augmented(A.rows(), 2 * A.cols());
+    
+    for (size_t i = 0; i < A.rows(); ++i)
+    {
+      for (size_t j = 0; j < A.cols(); ++j)
+        augmented(i, j) = A(i, j);
+      
+      for (size_t j = A.cols(); j < augmented.cols(); ++j)
+        augmented(i, j) = j - A.cols() == i;
+    }
+
+    matrix<T> reduced = reducedRowEchelon(augmented);
+    matrix<T> inverse(A.rows(), A.cols());
+
+    for (size_t i = 0; i < reduced.rows(); ++i)
+      for (size_t j = A.cols(); j < reduced.cols(); ++j)
+        inverse(i, j - A.cols()) = reduced(i, j);
+
+    return inverse;
   }
 
   template <typename T>
