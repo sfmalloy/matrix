@@ -10,6 +10,7 @@
 #include <string>
 #include <algorithm>
 #include <random>
+#include <stack>
 
 /**********************************************************************/
 // Local includes
@@ -80,6 +81,19 @@ template <typename T>
 mat::matrix<T>
 getRandom(size_t rows, size_t cols, int lower, int upper, unsigned long seed);
 
+template <typename T>
+mat::matrix<T>
+evaluate(const tokenlist_t& tokens);
+
+void
+printUsage(const std::string& usage);
+
+tokenlist_t
+toPostfix(tokenlist_t tokens);
+
+bool
+isOperator(const std::string& token);
+
 /**********************************************************************/
 
 // TODO allow for file input
@@ -132,7 +146,7 @@ doCommand(const tokenlist_t& tokens)
   else if (tokens.size() > 1 && tokens[1] == "=")
     equalExpression<T>(tokens);
   else if (g_matrices.find(tokens[0]) != g_matrices.end())
-    return g_matrices[tokens[0]];
+    return evaluate<T>(tokens);
   else
     std::cerr << "No such command.\n" << '\n';
   
@@ -242,17 +256,28 @@ equalExpression(const tokenlist_t& tokens)
   std::string keyword = tokens[2];
   if (keyword == "identity")
   {
+    if (tokens.size() != 4)
+    {
+      printUsage("identity <size>");
+      return;
+    }
     size_t size = std::stoi(tokens[3]);
     g_matrices[name] = getIdentity<T>(size);
   }
   else if (keyword == "random")
   {
+    if (tokens.size() != 7 || tokens.size() != 8)
+    {
+      printUsage("random <rows> <cols> <lower_bound> <upper_bound> [<seed>]");
+      return;
+    }
+
     size_t rows = std::stoul(tokens[3]);
     size_t cols = std::stoul(tokens[4]);
     size_t lowerBound = std::stoul(tokens[5]);
     size_t upperBound = std::stoul(tokens[6]);
     
-    if (tokens.size() >= 8)
+    if (tokens.size() == 8)
     {
       unsigned long seed = std::stoul(tokens[7]);
       g_matrices[name] = getRandom<T>(rows, cols, lowerBound, upperBound, seed);
@@ -313,7 +338,6 @@ equalExpression(const tokenlist_t& tokens)
     g_matrices[name] = doCommand<T>(tokenlist_t(tokens.begin() + 2, tokens.end()));
   else
     std::cerr << "Invalid expression.\n";
-  
 }
 
 template <typename T>
@@ -348,6 +372,62 @@ getRandom(size_t rows, size_t cols, int lower, int upper, unsigned long seed)
     elem = dist(gen);
 
   return A;
+}
+
+template <typename T>
+mat::matrix<T>
+evaluate(const tokenlist_t& tokens)
+{
+  std::string postfix = toPostfix(tokenlist_t(tokens.begin() + 2, tokens.end()));
+  return mat::matrix<T>();
+}
+
+// supported operators in order: * + -
+tokenlist_t
+toPostfix(tokenlist_t tokens)
+{
+  // Setup for conversion algorithm
+  std::stack<std::string> stack;
+  stack.push("(");
+  tokens.push_back(")");
+
+  tokenlist_t expression;
+  for (const auto& t : tokens)
+  {
+    if (t == "(")
+      stack.push(t);
+    else if (isOperator(t))
+    {
+      bool highPrecedence = (t == "*");
+      while (isOperator(stack.top()))
+      {
+        if (highPrecedence && stack.top() == "*")
+        {
+          expression.push_back(stack.top());
+          stack.pop();
+        }
+        
+        expression.push_back(stack.top());
+        stack.pop();
+      }
+    }
+    else
+      expression.push_back(t);
+  }
+
+  return expression;
+}
+
+void
+printUsage(const std::string& usage)
+{
+  std::cerr << "Usage: " << usage << '\n';
+}
+
+bool
+isOperator(const std::string& token)
+{
+  return token == "*" || token == "+" || token == "-";
 }
 
 /*
