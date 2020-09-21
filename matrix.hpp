@@ -473,10 +473,11 @@ namespace mat
   std::ostream&
   operator<<(std::ostream& output, const matrix<T>& M)
   {
+    output << std::left;
     for (size_t i = 0; i < M.rows(); ++i)
     {
       for (size_t j = 0; j < M.cols(); ++j)
-        output << M(i, j) << ' ';
+        output << std::setw(10) << M(i, j) << ' ';
       output << '\n';
     }
 
