@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <random>
 #include <stack>
+#include <cctype>
 
 /**********************************************************************/
 // Local includes
@@ -25,6 +26,27 @@ using matmap_t = std::unordered_map<std::string, mat::matrix<elem_t>>;
 /**********************************************************************/
 // Global variables
 matmap_t g_matrices;
+
+/**********************************************************************/
+// Global constants
+
+const std::string g_newMatFunctions[4]
+{
+  "transpose",
+  "inverse",
+  "row_echelon",
+  "reduced_row_echelon"
+};
+
+const std::unordered_map<char, int> g_operatorPrecedence
+{
+  {'+', 1},
+  {'-', 1},
+  {'*', 2},
+  {'^', 3},
+  {'(', 4},
+  {')', 4}
+};
 
 /**********************************************************************/
 // Command declarations
@@ -92,7 +114,7 @@ tokenlist_t
 toPostfix(tokenlist_t tokens);
 
 bool
-isOperator(const std::string& token);
+isOperator(char token);
 
 /**********************************************************************/
 
@@ -103,6 +125,7 @@ main()
   g_matrices = matmap_t();
 
   std::string line;
+  std::cout << "mat> ";
   while (std::getline(std::cin, line))
   {
     std::stringstream tokenize(line);
@@ -114,6 +137,8 @@ main()
 
     if (tokens.size() > 0)
       doCommand<elem_t>(tokens);
+    
+    std::cout << "mat> ";
   }
 
   return 0;
@@ -145,7 +170,7 @@ doCommand(const tokenlist_t& tokens)
     multiplyRow<T>(tokens);
   else if (tokens.size() > 1 && tokens[1] == "=")
     equalExpression<T>(tokens);
-  else if (g_matrices.find(tokens[0]) != g_matrices.end())
+  else if (g_matrices.find(tokens[0]) != g_matrices.end() || std::isdigit(tokens[0][0]))
     return evaluate<T>(tokens);
   else
     std::cerr << "No such command.\n" << '\n';
@@ -244,14 +269,6 @@ template <typename T>
 void
 equalExpression(const tokenlist_t& tokens)
 {
-  std::vector<std::string> commands
-  {
-    "transpose",
-    "inverse",
-    "row_echelon",
-    "reduced_row_echelon"
-  };
-
   std::string name = tokens[0];
   std::string keyword = tokens[2];
   if (keyword == "identity")
@@ -332,8 +349,8 @@ equalExpression(const tokenlist_t& tokens)
     while (std::getline(tokenize, num, ','))
       *(it++) = std::stof(num);
     g_matrices[name] = A;
-  }
-  else if (std::find(commands.begin(), commands.end(), keyword) != commands.end() 
+  } 
+  else if (std::find(std::begin(g_newMatFunctions), std::end(g_newMatFunctions), keyword) != std::end(g_newMatFunctions) 
     || g_matrices.find(keyword) != g_matrices.end())
     g_matrices[name] = doCommand<T>(tokenlist_t(tokens.begin() + 2, tokens.end()));
   else
@@ -378,14 +395,22 @@ template <typename T>
 mat::matrix<T>
 evaluate(const tokenlist_t& tokens)
 {
-  std::string postfix = toPostfix(tokenlist_t(tokens.begin() + 2, tokens.end()));
+  tokenlist_t postfix = toPostfix(tokens);
+
+  for (const auto& t : postfix)
+    std::cout << t << ' ';
+  std::cout << '\n';
+
   return mat::matrix<T>();
 }
 
-// supported operators in order: * + -
+// supported operators in order: ^ * + -
 tokenlist_t
 toPostfix(tokenlist_t tokens)
 {
+  for (const auto& t : tokens)
+    std::cout << t << '\n';
+
   // Setup for conversion algorithm
   std::stack<std::string> stack;
   stack.push("(");
@@ -394,22 +419,26 @@ toPostfix(tokenlist_t tokens)
   tokenlist_t expression;
   for (const auto& t : tokens)
   {
-    if (t == "(")
+    if (t[0] == '(')
       stack.push(t);
-    else if (isOperator(t))
+    
+    if (isOperator(t[0]) || t[0] == ')')
     {
-      bool highPrecedence = (t == "*");
-      while (isOperator(stack.top()))
+      int precedence = g_operatorPrecedence.at(t[0]);
+      if (isOperator(stack.top()[0]))
       {
-        if (highPrecedence && stack.top() == "*")
+        int currPrecedence = g_operatorPrecedence.at(stack.top()[0]);
+        while (precedence >= currPrecedence && stack.top()[0] != '(')
         {
           expression.push_back(stack.top());
           stack.pop();
+          currPrecedence = g_operatorPrecedence.at(stack.top()[0]);
         }
-        
-        expression.push_back(stack.top());
-        stack.pop();
       }
+      if (isOperator(t[0]))
+        stack.push(t);
+      else
+        stack.pop();      
     }
     else
       expression.push_back(t);
@@ -425,9 +454,9 @@ printUsage(const std::string& usage)
 }
 
 bool
-isOperator(const std::string& token)
+isOperator(char token)
 {
-  return token == "*" || token == "+" || token == "-";
+  return token == '^' || token == '*' || token == '+' || token == '-' ;
 }
 
 /*
