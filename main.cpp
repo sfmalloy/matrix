@@ -110,6 +110,9 @@ evaluate(const tokenlist_t& tokens);
 void
 printUsage(const std::string& usage);
 
+void
+printError(const std::string& error);
+
 tokenlist_t
 toPostfix(tokenlist_t tokens);
 
@@ -181,6 +184,12 @@ doCommand(const tokenlist_t& tokens)
 void
 printMatrix(const tokenlist_t& tokens)
 {
+  if (tokens.size() != 2)
+  {
+    printUsage("print <name>");
+    return;
+  }
+
   std::string name = tokens[1];
   if (g_matrices.find(name) != g_matrices.end())
   {
@@ -195,10 +204,19 @@ template <typename T>
 mat::matrix<T>
 transpose(const tokenlist_t& tokens)
 {
+  if (tokens.size() != 2)
+  {
+    printUsage("transpose <name>");
+    return mat::matrix<T>();
+  }
+
   std::string name = tokens[1];
   if (g_matrices.find(name) != g_matrices.end())
     return mat::transpose(g_matrices.at(name));
-  return mat::matrix<T>();
+  else
+  {
+    return mat::matrix<T>();
+  }
 
 }
 
@@ -206,9 +224,18 @@ template <typename T>
 mat::matrix<T>
 inverse(const tokenlist_t& tokens)
 {
+  if (tokens.size() != 2)
+  {
+    printUsage("inverse <name>");
+    return;
+  }
+
   std::string name = tokens[1];
   if (g_matrices.find(name) != g_matrices.end())
     return mat::inverse(g_matrices.at(name));
+  else
+    printUsage("No such matrix");
+  
   return mat::matrix<T>();
 }
 
@@ -332,7 +359,7 @@ equalExpression(const tokenlist_t& tokens)
 
     if (openCount != closeCount)
     {
-      std::cerr << "Missing " << (openCount < closeCount ? '[' : ']') << ".\n";
+      printError("Missing " + (openCount < closeCount ? '[' : ']'));
       return;
     }
 
@@ -354,7 +381,7 @@ equalExpression(const tokenlist_t& tokens)
     || g_matrices.find(keyword) != g_matrices.end())
     g_matrices[name] = doCommand<T>(tokenlist_t(tokens.begin() + 2, tokens.end()));
   else
-    std::cerr << "Invalid expression.\n";
+    printError("Invalid expression");
 }
 
 template <typename T>
@@ -451,6 +478,12 @@ void
 printUsage(const std::string& usage)
 {
   std::cerr << "Usage: " << usage << '\n';
+}
+
+void
+printError(const std::string& error)
+{
+  std::cerr << error << '\n';
 }
 
 bool
