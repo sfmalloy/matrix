@@ -21,6 +21,7 @@
 // Using declarations
 using elem_t = float;
 using tokenlist_t = std::vector<std::string>;
+using tokenstack_t = std::stack<std::string>;
 using matmap_t = std::unordered_map<std::string, mat::matrix<elem_t>>;
 
 /**********************************************************************/
@@ -42,10 +43,7 @@ const std::unordered_map<char, int> g_operatorPrecedence
 {
   {'+', 1},
   {'-', 1},
-  {'*', 2},
-  {'^', 3},
-  {'(', 4},
-  {')', 4}
+  {'*', 2}
 };
 
 /**********************************************************************/
@@ -117,11 +115,26 @@ tokenlist_t
 toPostfix(tokenlist_t tokens);
 
 bool
+isOperator(const std::string& token);
+
+bool
 isOperator(char token);
+
+tokenlist_t
+tokenizeMath(tokenlist_t tokens);
+
+bool
+isNumber(const std::string& token);
+
+bool
+foundMatrix(const std::string& name);
+
+template <typename T>
+void
+doOp(tokenstack_t& eval, tokenlist_t& results, const std::string& a, const std::string& b, const std::string& opStr);
 
 /**********************************************************************/
 
-// TODO allow for file input
 int
 main()
 {
@@ -173,10 +186,10 @@ doCommand(const tokenlist_t& tokens)
     multiplyRow<T>(tokens);
   else if (tokens.size() > 1 && tokens[1] == "=")
     equalExpression<T>(tokens);
-  else if (g_matrices.find(tokens[0]) != g_matrices.end() || std::isdigit(tokens[0][0]))
+  else if (g_matrices.find(tokens[0]) != g_matrices.end() || std::isdigit(tokens[0][0]) || tokens[0][0] == '(')
     return evaluate<T>(tokens);
   else
-    std::cerr << "No such command.\n" << '\n';
+    printError("Command does not exist.");
   
   return mat::matrix<T>();
 }
@@ -191,7 +204,7 @@ printMatrix(const tokenlist_t& tokens)
   }
 
   std::string name = tokens[1];
-  if (g_matrices.find(name) != g_matrices.end())
+  if (foundMatrix(name))
   {
     mat::matrix<elem_t> A = g_matrices.at(name);
     std::cout << A;
@@ -211,12 +224,10 @@ transpose(const tokenlist_t& tokens)
   }
 
   std::string name = tokens[1];
-  if (g_matrices.find(name) != g_matrices.end())
+  if (foundMatrix(name))
     return mat::transpose(g_matrices.at(name));
   else
-  {
     return mat::matrix<T>();
-  }
 
 }
 
@@ -227,14 +238,14 @@ inverse(const tokenlist_t& tokens)
   if (tokens.size() != 2)
   {
     printUsage("inverse <name>");
-    return;
+    return mat::matrix<T>();
   }
 
   std::string name = tokens[1];
-  if (g_matrices.find(name) != g_matrices.end())
+  if (foundMatrix(name))
     return mat::inverse(g_matrices.at(name));
   else
-    printUsage("No such matrix");
+    printUsage(name + " does not exist");
   
   return mat::matrix<T>();
 }
@@ -244,7 +255,7 @@ mat::matrix<T>
 rowEchelon(const tokenlist_t& tokens)
 {
   std::string name = tokens[1];
-  if (g_matrices.find(name) != g_matrices.end())
+  if (foundMatrix(name))
     return mat::rowEchelon(g_matrices.at(name));
   return mat::matrix<T>();
 }
@@ -254,7 +265,7 @@ mat::matrix<T>
 reducedRowEchelon(const tokenlist_t& tokens)
 {
   std::string name = tokens[1];
-  if (g_matrices.find(name) != g_matrices.end())
+  if (foundMatrix(name))
     return mat::reducedRowEchelon(g_matrices.at(name));
   return mat::matrix<T>();
 }
@@ -265,7 +276,7 @@ swapRows(const tokenlist_t& tokens)
   std::string name = tokens[1];
   size_t r1 = std::stoul(tokens[2]);
   size_t r2 = std::stoul(tokens[3]);
-  if (g_matrices.find(name) != g_matrices.end())
+  if (foundMatrix(name))
     g_matrices.at(name).swapRows(r1, r2);
 }
 
@@ -275,7 +286,7 @@ addRows(const tokenlist_t& tokens)
   std::string name = tokens[1];
   size_t r1 = std::stoul(tokens[2]);
   size_t r2 = std::stoul(tokens[3]);
-  if (g_matrices.find(name) != g_matrices.end())
+  if (foundMatrix(name))
     g_matrices.at(name).addRows(r1, r2);
 }
 
@@ -286,12 +297,13 @@ multiplyRow(const tokenlist_t& tokens)
   std::string name = tokens[1];
   size_t row = std::stoul(tokens[2]);
   T scalar = std::stof(tokens[3]);
-  if (g_matrices.find(name) != g_matrices.end())
+  if (foundMatrix(name))
     g_matrices.at(name).multiplyRow(row, scalar);
 }
 
 
 // FIXME check size of tokens to prevent seg faults when giving too few args
+// FIXME if token after equal sign is only a number, must add to seperate elem_t map.
 template <typename T>
 void
 equalExpression(const tokenlist_t& tokens)
@@ -359,7 +371,8 @@ equalExpression(const tokenlist_t& tokens)
 
     if (openCount != closeCount)
     {
-      printError("Missing " + (openCount < closeCount ? '[' : ']'));
+      // Need to cast "Missing " to a std::string or else I can't use operator+ to concatenate "[" or "]"...
+      printError((std::string) "Missing " + (openCount < closeCount ? "[" : "]"));
       return;
     }
 
@@ -378,7 +391,7 @@ equalExpression(const tokenlist_t& tokens)
     g_matrices[name] = A;
   } 
   else if (std::find(std::begin(g_newMatFunctions), std::end(g_newMatFunctions), keyword) != std::end(g_newMatFunctions) 
-    || g_matrices.find(keyword) != g_matrices.end())
+    || foundMatrix(keyword) || keyword[0] == '(' || isNumber(keyword))
     g_matrices[name] = doCommand<T>(tokenlist_t(tokens.begin() + 2, tokens.end()));
   else
     printError("Invalid expression");
@@ -423,55 +436,156 @@ mat::matrix<T>
 evaluate(const tokenlist_t& tokens)
 {
   tokenlist_t postfix = toPostfix(tokens);
+  tokenstack_t eval;
+  tokenlist_t results;
 
-  for (const auto& t : postfix)
-    std::cout << t << ' ';
-  std::cout << '\n';
+  for (auto it = postfix.begin(); it != postfix.end(); ++it)
+  {
+    if (!isOperator(*it))
+      eval.push(*it);
+    else
+    {
+      std::string b = eval.top();
+      eval.pop();
+      std::string a = eval.top();
+      eval.pop();
 
-  return mat::matrix<T>();
+      doOp<T>(eval, results, a, b, *it);
+    }
+
+    if (eval.top() == "__error")
+    {
+      printError("Evaluation error");
+      return mat::matrix<T>();
+    }
+  }
+
+  return g_matrices[eval.top()];
 }
 
-// supported operators in order: ^ * + -
 tokenlist_t
 toPostfix(tokenlist_t tokens)
 {
-  for (const auto& t : tokens)
-    std::cout << t << '\n';
-
+  tokens = tokenizeMath(tokens);
   // Setup for conversion algorithm
-  std::stack<std::string> stack;
+  tokenstack_t stack;
   stack.push("(");
   tokens.push_back(")");
 
   tokenlist_t expression;
   for (const auto& t : tokens)
   {
-    if (t[0] == '(')
-      stack.push(t);
-    
-    if (isOperator(t[0]) || t[0] == ')')
+    if (isOperator(t))
     {
-      int precedence = g_operatorPrecedence.at(t[0]);
-      if (isOperator(stack.top()[0]))
+      int currPrecedence = g_operatorPrecedence.at(t[0]);
+      while (isOperator(stack.top()) && currPrecedence <= g_operatorPrecedence.at(stack.top()[0]))
       {
-        int currPrecedence = g_operatorPrecedence.at(stack.top()[0]);
-        while (precedence >= currPrecedence && stack.top()[0] != '(')
-        {
-          expression.push_back(stack.top());
-          stack.pop();
-          currPrecedence = g_operatorPrecedence.at(stack.top()[0]);
-        }
+        expression.push_back(stack.top());
+        stack.pop();
       }
-      if (isOperator(t[0]))
-        stack.push(t);
-      else
-        stack.pop();      
+
+      stack.push(t);
     }
+    else if (t == ")")
+    {
+      while (stack.top() != "(")
+      {
+        expression.push_back(stack.top());
+        stack.pop();
+      }
+
+      stack.pop();
+    }
+    else if (t == "(")
+      stack.push(t);
     else
       expression.push_back(t);
   }
 
   return expression;
+}
+
+tokenlist_t
+tokenizeMath(tokenlist_t tokens)
+{
+  tokenlist_t newTokens;
+  // Split parentheses
+  for (const auto& t : tokens)
+  {
+    if (t[0] != '(' && t.back() != ')')
+      newTokens.push_back(t);
+    else if (t[0] == '(')
+    {
+      newTokens.push_back("(");
+      newTokens.push_back(t.substr(1));
+    }
+    else
+    {
+      newTokens.push_back(t.substr(0, t.size() - 1));
+      newTokens.push_back(")");
+    }
+  }
+
+  return newTokens;
+}
+
+template <typename T>
+void
+doOp(tokenstack_t& eval, tokenlist_t& results, const std::string& a, const std::string& b, const std::string& opStr)
+{
+  char op = opStr[0];
+  bool error = false;
+  int resId = rand() % 10000;
+  std::string resName = "__result" + std::to_string(resId);
+
+  while (std::find(results.begin(), results.end(), resName) != results.end())
+  {
+    resId = rand() % 10000;
+    resName = "__result" + std::to_string(resId);
+  }
+
+  if (foundMatrix(a) && foundMatrix(b))
+  {
+    if (op == '+')
+      g_matrices[resName] = g_matrices[a] + g_matrices[b];
+    else if (op == '-')
+      g_matrices[resName] = g_matrices[a] - g_matrices[b];
+    else if (op == '*')
+      g_matrices[resName] = g_matrices[a] * g_matrices[b];
+    else
+      error = true;
+    
+    if (!error)
+      eval.push(resName);
+  }
+  else if (foundMatrix(a) && isNumber(b))
+  {
+    if (op == '*')
+      g_matrices[resName] = g_matrices[a] * std::stof(b);
+    else
+      error = true;
+    
+    if (!error)
+      eval.push(resName);
+  }
+  else if (foundMatrix(b) && isNumber(a))
+  {
+    if (op == '*')
+      g_matrices[resName] = g_matrices[b] * std::stof(a);
+    else
+      error = true;
+    
+    if (!error)
+      eval.push(resName);
+  }
+  else
+    error = true;
+
+  if (error)
+  {
+    eval = tokenstack_t();
+    eval.push("__error");
+  }
 }
 
 void
@@ -487,41 +601,37 @@ printError(const std::string& error)
 }
 
 bool
-isOperator(char token)
+foundMatrix(const std::string& name)
 {
-  return token == '^' || token == '*' || token == '+' || token == '-' ;
+  return g_matrices.find(name) != g_matrices.end();
 }
 
-/*
- * Command list
- * 
- * Equals operations
- * To print any result after doing an equals operation, use print command
- * <name> = identity <order>
- * <name> = random <rows> <cols> <lower_bound> <upper_bound> [<seed>]
- * <name> = [[0,1,2,3...N],[0,1,2,3,...N],...]
- * <name> = <command_that_returns_matrix>
- * <name> = <mathematical_expression>
- * <name> = <other_name>
- *
- * Commands that return a matrix that can be saved into a new variable
- * or overwrite another variable. If commands are just ran, result is
- * printed and nothing is permanently changed.
- * 
- * transpose <name>
- * inverse <name>
- * row_echelon <name>
- * reduced_row_echelon <name>
- *
- * Commands that do not return a matrix, but instead change the
- * state of a given matrix.
- * 
- * swap_rows <name> <r1> <r2>
- * add_rows <name> <r1> <r2> [<scalar>]
- * multiply_row <name> <r> <scalar>
- * 
- * Misc commands
- * print <name>
- * reset
- * exit
- */
+bool
+isOperator(const std::string& token)
+{
+  return token.size() == 1 && 
+    g_operatorPrecedence.find(token[0]) != g_operatorPrecedence.end();
+}
+
+bool
+isOperator(char token)
+{
+  return g_operatorPrecedence.find(token) != g_operatorPrecedence.end();
+}
+
+bool
+isNumber(const std::string& token)
+{
+  bool foundDecimal = false;
+  for (char c : token)
+  {
+    if (foundDecimal && c == '.')
+      return false;
+    else if (!foundDecimal && c == '.')
+      foundDecimal = true;
+    else if (!std::isdigit(c))
+      return false;
+  }
+
+  return true;
+}

@@ -173,8 +173,6 @@ namespace mat
       }
     }
 
-// transpose, inverse, row_echelon, reduced_row_echelon, keyword in g_matrices
-
     void 
     multiplyRow(size_t r, T scalar)
     {
@@ -437,7 +435,6 @@ namespace mat
     return transposed;
   }
 
-  // TODO
   template <typename T>
   matrix<T>
   inverse(matrix<T>& A)
