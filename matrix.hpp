@@ -205,6 +205,9 @@ namespace mat
           for (size_t j = 0; j < other.cols(); ++j)
             (*this)(i, j) += other(i, j);
       }
+      else
+        std::cerr << "Incompatible matrices, cannot add";
+      
 
       return *this;
     }

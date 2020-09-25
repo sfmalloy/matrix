@@ -3,3 +3,5 @@ driver.out
 main.out
 *.o
 *.vscode
+*.json
+todo.txt

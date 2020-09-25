@@ -210,7 +210,7 @@ printMatrix(const tokenlist_t& tokens)
     std::cout << A;
   }
   else
-    std::cout << "Matrix not found\n";
+    printError("Matrix not found");
 }
 
 template <typename T>
@@ -254,6 +254,12 @@ template <typename T>
 mat::matrix<T>
 rowEchelon(const tokenlist_t& tokens)
 {
+  if (tokens.size() != 2)
+  {
+    printUsage("row_echelon <name>");
+    return mat::matrix<T>();
+  }
+  
   std::string name = tokens[1];
   if (foundMatrix(name))
     return mat::rowEchelon(g_matrices.at(name));
@@ -264,6 +270,12 @@ template <typename T>
 mat::matrix<T>
 reducedRowEchelon(const tokenlist_t& tokens)
 {
+  if (tokens.size() != 2)
+  {
+    printUsage("reduced_row_echelon <name>");
+    return mat::matrix<T>();
+  }
+
   std::string name = tokens[1];
   if (foundMatrix(name))
     return mat::reducedRowEchelon(g_matrices.at(name));
@@ -317,12 +329,13 @@ equalExpression(const tokenlist_t& tokens)
       printUsage("identity <size>");
       return;
     }
-    size_t size = std::stoi(tokens[3]);
+    size_t size = std::stoul(tokens[3]);
     g_matrices[name] = getIdentity<T>(size);
   }
   else if (keyword == "random")
   {
-    if (tokens.size() != 7 || tokens.size() != 8)
+    std::cout << tokens.size() << '\n';
+    if (tokens.size() != 7 && tokens.size() != 8)
     {
       printUsage("random <rows> <cols> <lower_bound> <upper_bound> [<seed>]");
       return;
@@ -340,7 +353,6 @@ equalExpression(const tokenlist_t& tokens)
     }
     else
       g_matrices[name] = getRandom<T>(rows, cols, lowerBound, upperBound);
-
   }
   else if (keyword[0] == '[')
   {
@@ -389,7 +401,7 @@ equalExpression(const tokenlist_t& tokens)
     while (std::getline(tokenize, num, ','))
       *(it++) = std::stof(num);
     g_matrices[name] = A;
-  } 
+  }
   else if (std::find(std::begin(g_newMatFunctions), std::end(g_newMatFunctions), keyword) != std::end(g_newMatFunctions) 
     || foundMatrix(keyword) || keyword[0] == '(' || isNumber(keyword))
     g_matrices[name] = doCommand<T>(tokenlist_t(tokens.begin() + 2, tokens.end()));
@@ -603,7 +615,7 @@ printError(const std::string& error)
 bool
 foundMatrix(const std::string& name)
 {
-  return g_matrices.find(name) != g_matrices.end();
+  return name.substr(2) != "__" && (g_matrices.find(name) != g_matrices.end());
 }
 
 bool
