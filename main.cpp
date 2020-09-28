@@ -202,13 +202,10 @@ printMatrix(const tokenlist_t& tokens)
     printUsage("print <name>");
     return;
   }
-
+	
   std::string name = tokens[1];
   if (foundMatrix(name))
-  {
-    mat::matrix<elem_t> A = g_matrices.at(name);
-    std::cout << A;
-  }
+    std::cout << g_matrices.at(name);
   else
     printError("Matrix not found");
 }
@@ -490,7 +487,7 @@ toPostfix(tokenlist_t tokens)
     if (isOperator(t))
     {
       int currPrecedence = g_operatorPrecedence.at(t[0]);
-      while (isOperator(stack.top()) && currPrecedence <= g_operatorPrecedence.at(stack.top()[0]))
+			while (isOperator(stack.top()) && currPrecedence <= g_operatorPrecedence.at(stack.top()[0]))
       {
         expression.push_back(stack.top());
         stack.pop();
@@ -615,7 +612,7 @@ printError(const std::string& error)
 bool
 foundMatrix(const std::string& name)
 {
-  return name.substr(2) != "__" && (g_matrices.find(name) != g_matrices.end());
+  return (name.substr(0, 2) != "__" || name.find("result") != std::string::npos) && (g_matrices.find(name) != g_matrices.end());
 }
 
 bool
