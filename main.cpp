@@ -151,8 +151,10 @@ main()
     while (std::getline(tokenize, token, ' '))
       tokens.push_back(token);
 
-    if (tokens.size() > 0)
+    if (tokens.size() > 0 && tokens[0] != "exit")
       doCommand<elem_t>(tokens);
+    else if (tokens[0] == "exit")
+      break;
     
     std::cout << "mat> ";
   }
@@ -164,9 +166,7 @@ template <typename T>
 mat::matrix<T>
 doCommand(const tokenlist_t& tokens)
 {
-  if (tokens[0] == "exit")
-    exit(0);
-  else if (tokens[0] == "reset")
+  if (tokens[0] == "reset")
     g_matrices = matmap_t();
   else if (tokens[0] == "print")
     printMatrix(tokens);

@@ -45,6 +45,17 @@ namespace mat
     {
     }
 
+    // size ctor
+    matrix(size_t rows, size_t cols, T init)
+      : m_rows(rows),
+        m_cols(cols),
+        m_size(rows * cols),
+        m_matrix(new T[m_size])
+    {
+      for (auto& elem : *this)
+        elem = init;
+    }
+
     // copy ctor
     matrix(const matrix& m)
       : m_rows(m.rows()),
@@ -158,17 +169,9 @@ namespace mat
         return;
       for (size_t j = 0; j < m_cols; ++j) 
       {
-        // When using floats, this if statement is required so
-        // rounding errors don't occur.
-        T a = (*this)(r2, j);
-        T b = -scalar * (*this)(r1, j);
-        T diff = std::fabs(a - b);
-        
-        // See https://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
-        if (diff <= std::numeric_limits<T>::epsilon() * std::fabs(a + b) * 2 
-            || std::fabs(a - b) < std::numeric_limits<T>::min())
-          (*this)(r2, j) = 0;
-        else
+        // if (almostEqual((*this)(r2, j), scalar * (*this)(r1, j)) && scalar < 0)
+        //   (*this)(r2, j) = 0;
+        // else
           (*this)(r2, j) += scalar * (*this)(r1, j);
       }
     }
@@ -177,10 +180,8 @@ namespace mat
     multiplyRow(size_t r, T scalar)
     {
       for (size_t j = 0; j < m_cols; ++j)
-      {
         if ((*this)(r, j) != 0)
           (*this)(r, j) *= scalar;
-      }
     }
 
     T&
@@ -246,10 +247,10 @@ namespace mat
     {
       if (m_cols == other.rows())
       {
-        matrix result(m_rows, other.cols());
+        matrix result(m_rows, other.cols(), T(0));
         for (size_t i = 0; i < result.rows(); ++i)
           for (size_t j = 0; j < result.cols(); ++j)
-            for (size_t k = 0; k < this->cols(); ++k)
+            for (size_t k = 0; k < m_cols; ++k)
               result(i, j) += (*this)(i, k) * other(k, j);
           
         *this = result;
@@ -337,6 +338,14 @@ namespace mat
     size_t m_size;
 
     T* m_matrix;
+
+    bool
+    almostEqual(T a, T b)
+    {
+      T diff = std::fabs(a - b);
+      return diff <= std::numeric_limits<T>::epsilon() * std::fabs(a + b) 
+              || std::fabs(a - b) < std::numeric_limits<T>::min();
+    }
   };
   /**********************************************************************/
   // Global functions
