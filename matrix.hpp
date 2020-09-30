@@ -498,7 +498,7 @@ namespace mat
       for (j = 0; j < A.cols(); ++j)
         augmented(i, j) = A(i, j);
       for ( ; j < augmented.cols(); ++j)
-        augmented(i, j) = B(i, j - B.cols());
+        augmented(i, j) = B(i, j - A.cols());
     }
 
     return augmented;
