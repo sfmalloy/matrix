@@ -255,6 +255,8 @@ namespace mat
           
         *this = result;
       }
+      else
+        std::cerr << "Cannot multiply, returning first matrix\n";
 
       return *this;
     }
@@ -476,6 +478,30 @@ namespace mat
         inverse(i, j - A.cols()) = reduced(i, j);
 
     return inverse;
+  }
+
+  template <typename T>
+  matrix<T>
+  augment(const matrix<T>& A, const matrix<T>& B)
+  {
+    if (A.rows() != B.rows())
+    {
+      std::cerr << "Number of rows not equal.\n";
+      return A;
+    }
+
+    matrix<T> augmented(A.rows(), A.cols() + B.cols());
+
+    for (size_t i = 0; i < A.rows(); ++i)
+    {
+      size_t j;
+      for (j = 0; j < A.cols(); ++j)
+        augmented(i, j) = A(i, j);
+      for ( ; j < augmented.cols(); ++j)
+        augmented(i, j) = B(i, j - B.cols());
+    }
+
+    return augmented;
   }
 
   template <typename T>

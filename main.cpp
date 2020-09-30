@@ -31,6 +31,8 @@ matmap_t g_matrices;
 /**********************************************************************/
 // Global constants
 
+// List of matrix functions that return a new matrix. These can be used
+// to store into a new matrix variable
 const std::string g_newMatFunctions[4]
 {
   "transpose",
@@ -39,6 +41,8 @@ const std::string g_newMatFunctions[4]
   "reduced_row_echelon"
 };
 
+// Used when converting math expressions from infix to postfix for
+// easy computation while keeping order of operations.
 const std::unordered_map<char, int> g_operatorPrecedence
 {
   {'+', 1},
@@ -49,27 +53,72 @@ const std::unordered_map<char, int> g_operatorPrecedence
 /**********************************************************************/
 // Command declarations
 
+/// \brief Prints matrix in easy to read form
+/// \param tokens contains expression with name of matrix to print
+/// \note Error message printed if name specified in tokens does not exist.
+///
+/// print <name>
+/// TODO expand to be able to print result of any command that returns a matrix.
 void
 printMatrix(const tokenlist_t& tokens);
 
 template <typename T>
 mat::matrix<T>
+random(const tokenlist_t& tokens);
+
+template <typename T>
+mat::matrix<T>
+identity(const tokenlist_t& tokens);
+
+/// \brief Swaps ros and columns of given matrix
+/// \param tokens contains name of matrix to transpose
+/// \return Transposed matrix if matrix exists, otherwise empty matrix
+///
+/// transpose <name>
+template <typename T>
+mat::matrix<T>
 transpose(const tokenlist_t& tokens);
 
+/// \brief Find inverse of matrix if it exists
+/// \param tokens contains name of matrix to invert
+/// \return Inverse of matrix if matrix exists and can be inverted, 
+///   otherwise empty matrix.
+///
+/// inverse <name>
 template <typename T>
 mat::matrix<T>
 inverse(const tokenlist_t& tokens);
 
+/// \brief Transform matrix to have leading ones and zeros
+///   below the leading ones.
+/// \param tokens contains name of matrix to transform
+/// \return Matrix in row echelon form if it exists, otherwise empty matrix.
+///
+/// row_echelon <name>
 template <typename T>
 mat::matrix<T>
 rowEchelon(const tokenlist_t& tokens);
 
+/// \brief Transform matrix to have leading ones and zeros 
+///   both below and above the leading ones.
+/// \param tokens contains name of matrix to transform
+/// \return Matrix in reduced row echelon form if it exists, otherwise empty matrix.
+///
+/// reduced_row_echelon <name>
 template <typename T>
 mat::matrix<T>
 reducedRowEchelon(const tokenlist_t& tokens);
 
+/// \brief Swap two rows in a matrix
+/// \param tokens contains name of matrix to swap two rows in
+/// 
+/// swap_rows <name> <row1> <row2>
 void
 swapRows(const tokenlist_t& tokens);
+
+template <typename T>
+mat::matrix<T>
+augment(const tokenlist_t& tokens);
 
 void
 addRows(const tokenlist_t& tokens);
@@ -184,6 +233,12 @@ doCommand(const tokenlist_t& tokens)
     addRows(tokens);
   else if (tokens[0] == "multiply_row")
     multiplyRow<T>(tokens);
+  else if (tokens[0] == "random")
+    return random<T>(tokens);
+  else if (tokens[0] == "identity")
+    return identity<T>(tokens);
+  else if (tokens[0] == "augment")
+    return augment<T>(tokens);
   else if (tokens.size() > 1 && tokens[1] == "=")
     equalExpression<T>(tokens);
   else if (g_matrices.find(tokens[0]) != g_matrices.end() || std::isdigit(tokens[0][0]) || tokens[0][0] == '(')
@@ -196,18 +251,8 @@ doCommand(const tokenlist_t& tokens)
 
 void
 printMatrix(const tokenlist_t& tokens)
-{
-  if (tokens.size() != 2)
-  {
-    printUsage("print <name>");
-    return;
-  }
-	
-  std::string name = tokens[1];
-  if (foundMatrix(name))
-    std::cout << g_matrices.at(name);
-  else
-    printError("Matrix not found");
+{	
+  std::cout << doCommand<elem_t>(tokenlist_t(tokens.begin() + 1, tokens.end()));
 }
 
 template <typename T>
@@ -225,7 +270,6 @@ transpose(const tokenlist_t& tokens)
     return mat::transpose(g_matrices.at(name));
   else
     return mat::matrix<T>();
-
 }
 
 template <typename T>
@@ -242,7 +286,7 @@ inverse(const tokenlist_t& tokens)
   if (foundMatrix(name))
     return mat::inverse(g_matrices.at(name));
   else
-    printUsage(name + " does not exist");
+    printError("Matrix " + name + " not found");
   
   return mat::matrix<T>();
 }
@@ -260,6 +304,9 @@ rowEchelon(const tokenlist_t& tokens)
   std::string name = tokens[1];
   if (foundMatrix(name))
     return mat::rowEchelon(g_matrices.at(name));
+  else
+    printError("Matrix " + name + " not found");
+
   return mat::matrix<T>();
 }
 
@@ -276,40 +323,124 @@ reducedRowEchelon(const tokenlist_t& tokens)
   std::string name = tokens[1];
   if (foundMatrix(name))
     return mat::reducedRowEchelon(g_matrices.at(name));
+  else
+    printError("Matrix " + name + " not found");
+
+  return mat::matrix<T>();
+}
+
+template <typename T>
+mat::matrix<T>
+augment(const tokenlist_t& tokens)
+{
+  if (tokens.size() != 3)
+  {
+    printUsage("augment <name1> <name2>");
+    return mat::matrix<T>();
+  }
+
+  std::string name1 = tokens[1];
+  std::string name2 = tokens[2];
+  if (foundMatrix(name1) && foundMatrix(name2))
+    return mat::augment(g_matrices.at(name1), g_matrices.at(name2));
+  else
+    printError("Not all matrices found");
+
   return mat::matrix<T>();
 }
 
 void
 swapRows(const tokenlist_t& tokens)
 {
+  if (tokens.size() != 3)
+  {
+    printUsage("swap_rows <name> <r1> <r2>");
+    return;
+  }
+
   std::string name = tokens[1];
   size_t r1 = std::stoul(tokens[2]);
   size_t r2 = std::stoul(tokens[3]);
   if (foundMatrix(name))
     g_matrices.at(name).swapRows(r1, r2);
+  else
+    printError("Matrix " + name + " not found");
 }
 
 void
 addRows(const tokenlist_t& tokens)
 {
+  if (tokens.size() != 4)
+  {
+    printUsage("add_rows <name> <row1> <row2>");
+    return;
+  }
+
   std::string name = tokens[1];
   size_t r1 = std::stoul(tokens[2]);
   size_t r2 = std::stoul(tokens[3]);
   if (foundMatrix(name))
     g_matrices.at(name).addRows(r1, r2);
+  else
+    printError("Matrix " + name + " not found");
 }
 
 template <typename T>
 void
 multiplyRow(const tokenlist_t& tokens)
 {
+  if (tokens.size() != 4)
+  {
+    printUsage("multiply_row <name> <scalar> <row>");
+    return;
+  }
+
   std::string name = tokens[1];
   size_t row = std::stoul(tokens[2]);
   T scalar = std::stof(tokens[3]);
   if (foundMatrix(name))
     g_matrices.at(name).multiplyRow(row, scalar);
+  else
+    printError("Matrix " + name + " not found");
 }
 
+template <typename T>
+mat::matrix<T>
+random(const tokenlist_t& tokens)
+{
+  if (tokens.size() != 5 && tokens.size() != 6)
+  {
+    printUsage("random <rows> <cols> <lower_bound> <upper_bound> [<seed>]");
+    return mat::matrix<T>();
+  }
+
+  size_t rows = std::stoul(tokens[1]);
+  size_t cols = std::stoul(tokens[2]);
+  size_t lowerBound = std::stoul(tokens[3]);
+  size_t upperBound = std::stoul(tokens[4]);
+  
+  if (tokens.size() == 8)
+  {
+    unsigned long seed = std::stoul(tokens[5]);
+    return getRandom<T>(rows, cols, lowerBound, upperBound, seed);
+  }
+  else
+    return getRandom<T>(rows, cols, lowerBound, upperBound);
+}
+
+template <typename T>
+mat::matrix<T>
+identity(const tokenlist_t& tokens)
+{
+  if (tokens.size() != 2)
+  {
+    printUsage("identity <size>");
+    return mat::matrix<T>();
+  }
+
+  size_t size = std::stoul(tokens[1]);
+  return getIdentity<T>(size);
+}
 
 // FIXME check size of tokens to prevent seg faults when giving too few args
 // FIXME if token after equal sign is only a number, must add to seperate elem_t map.
@@ -319,39 +450,7 @@ equalExpression(const tokenlist_t& tokens)
 {
   std::string name = tokens[0];
   std::string keyword = tokens[2];
-  if (keyword == "identity")
-  {
-    if (tokens.size() != 4)
-    {
-      printUsage("identity <size>");
-      return;
-    }
-    size_t size = std::stoul(tokens[3]);
-    g_matrices[name] = getIdentity<T>(size);
-  }
-  else if (keyword == "random")
-  {
-    std::cout << tokens.size() << '\n';
-    if (tokens.size() != 7 && tokens.size() != 8)
-    {
-      printUsage("random <rows> <cols> <lower_bound> <upper_bound> [<seed>]");
-      return;
-    }
-
-    size_t rows = std::stoul(tokens[3]);
-    size_t cols = std::stoul(tokens[4]);
-    size_t lowerBound = std::stoul(tokens[5]);
-    size_t upperBound = std::stoul(tokens[6]);
-    
-    if (tokens.size() == 8)
-    {
-      unsigned long seed = std::stoul(tokens[7]);
-      g_matrices[name] = getRandom<T>(rows, cols, lowerBound, upperBound, seed);
-    }
-    else
-      g_matrices[name] = getRandom<T>(rows, cols, lowerBound, upperBound);
-  }
-  else if (keyword[0] == '[')
+  if (keyword[0] == '[')
   {
     // Concatenate list together into one string to tokenize list easier
     std::string listStr;
@@ -394,16 +493,12 @@ equalExpression(const tokenlist_t& tokens)
     mat::matrix<T> A(numRows, numCols);
     auto it = A.begin();
 
-    // FIXME: Don't use only stof. Check the type to see if using double or float (or int I guess).
     while (std::getline(tokenize, num, ','))
       *(it++) = std::stof(num);
     g_matrices[name] = A;
   }
-  else if (std::find(std::begin(g_newMatFunctions), std::end(g_newMatFunctions), keyword) != std::end(g_newMatFunctions) 
-    || foundMatrix(keyword) || keyword[0] == '(' || isNumber(keyword))
-    g_matrices[name] = doCommand<T>(tokenlist_t(tokens.begin() + 2, tokens.end()));
   else
-    printError("Invalid expression");
+    g_matrices[name] = doCommand<T>(tokenlist_t(tokens.begin() + 2, tokens.end()));
 }
 
 template <typename T>
@@ -612,7 +707,8 @@ printError(const std::string& error)
 bool
 foundMatrix(const std::string& name)
 {
-  return (name.substr(0, 2) != "__" || name.find("result") != std::string::npos) && (g_matrices.find(name) != g_matrices.end());
+  return (name.substr(0, 2) != "__" || name.find("result") != std::string::npos) 
+    && (g_matrices.find(name) != g_matrices.end());
 }
 
 bool
@@ -641,6 +737,5 @@ isNumber(const std::string& token)
     else if (!std::isdigit(c))
       return false;
   }
-
   return true;
 }
