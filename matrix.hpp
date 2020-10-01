@@ -415,7 +415,7 @@ namespace mat
 			{
 				T elem = A(i, currCol);
 				if (elem != 0)
-					A.addRows(currRow, i, -1.0 * elem);
+					A.addRows(currRow, i, -elem);
 			}
 		}
 

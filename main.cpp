@@ -4,6 +4,8 @@
 /**********************************************************************/
 // System includes
 #include <iostream>
+#include <istream>
+#include <fstream>
 #include <sstream>
 #include <vector>
 #include <unordered_map>
@@ -30,16 +32,6 @@ matmap_t g_matrices;
 /**********************************************************************/
 // Global constants
 
-// List of matrix functions that return a new matrix. These can be used
-// to store into a new matrix variable
-const std::string g_newMatFunctions[4]
-{
-	"transpose",
-	"inverse",
-	"row_echelon",
-	"reduced_row_echelon"
-};
-
 // Used when converting math expressions from infix to postfix for
 // easy computation while keeping order of operations.
 const std::unordered_map<char, int> g_operatorPrecedence
@@ -57,7 +49,6 @@ const std::unordered_map<char, int> g_operatorPrecedence
 /// \note Error message printed if name specified in tokens does not exist.
 ///
 /// print <name>
-/// TODO expand to be able to print result of any command that returns a matrix.
 void
 printMatrix(const tokenlist_t& tokens);
 
@@ -124,6 +115,9 @@ equalExpression(const tokenlist_t& tokens);
 /**********************************************************************/
 // Helper function declarations
 
+void
+repl(std::istream& input);
+
 mat::matrix
 doCommand(const tokenlist_t& tokens);
 
@@ -169,18 +163,40 @@ doOp(tokenstack_t& eval, tokenlist_t& results, const std::string& a, const std::
 /**********************************************************************/
 
 int
-main()
+main(int argc, char* argv[])
 {
-	g_matrices = matmap_t();
+	if (argc != 1 && argc != 2)
+	{
+		printUsage("./main.out [<file>.txt]");
+		exit(1);
+	}
 
+	if (argc == 2)
+	{
+		std::ifstream fileStream(argv[1]);
+		repl(fileStream);
+	}
+	else
+		repl(std::cin);
+
+	return 0;
+}
+
+void
+repl(std::istream& input)
+{
+	bool isCin = (&input) == (&std::cin);
+	g_matrices = matmap_t();
+	
 	std::string line;
-	std::cout << "mat> ";
-	while (std::getline(std::cin, line))
+	if (isCin)
+		std::cout << "mat> ";
+	while (std::getline(input, line))
 	{
 		std::stringstream tokenize(line);
 		std::string token;
 		tokenlist_t tokens;
-
+		
 		while (std::getline(tokenize, token, ' '))
 			tokens.push_back(token);
 
@@ -189,13 +205,12 @@ main()
 		else if (tokens.size() > 0 && tokens[0] == "exit")
 			break;
 		
-		std::cout << "mat> ";
+		if (isCin)
+			std::cout << "mat> ";
 	}
 	
-	if (line != "exit")
+	if (isCin && line != "exit")
 		std::cout << '\n';
-
-	return 0;
 }
 
 mat::matrix
