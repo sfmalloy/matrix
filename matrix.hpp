@@ -169,10 +169,10 @@ namespace mat
         return;
       for (size_t j = 0; j < m_cols; ++j) 
       {
-        // if (almostEqual((*this)(r2, j), scalar * (*this)(r1, j)) && scalar < 0)
-        //   (*this)(r2, j) = 0;
-        // else
-          (*this)(r2, j) += scalar * (*this)(r1, j);
+        if (almostEqual((*this)(r2, j), -scalar * (*this)(r1, j)))
+					(*this)(r2, j) = 0;
+        else
+					(*this)(r2, j) += scalar * (*this)(r1, j);
       }
     }
 
@@ -394,14 +394,16 @@ namespace mat
 
       T leadingElement = A(currRow, currCol);
       if (leadingElement != 1)
-        A.multiplyRow(currRow, 1 / leadingElement);
+        A.multiplyRow(currRow, 1.0 / leadingElement);
 
       for (size_t i = currRow + 1; i < A.rows(); ++i)
       {
         T elem = A(i, currCol);
         if (elem != 0)
-          A.addRows(currRow, i, -elem);
+          A.addRows(currRow, i, -1.0 * elem);
       }
+
+			std::cout << A;
     }
 
     return A;
