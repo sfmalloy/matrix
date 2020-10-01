@@ -17,7 +17,7 @@
 #include <cmath>
 
 /**********************************************************************/
-using T = float;
+using T = double;
 
 namespace mat 
 {

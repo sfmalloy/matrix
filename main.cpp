@@ -377,7 +377,7 @@ multiplyRow(const tokenlist_t& tokens)
 
 	std::string name = tokens[1];
 	size_t row = std::stoul(tokens[2]);
-	T scalar = std::stof(tokens[3]);
+	T scalar = std::stod(tokens[3]);
 	if (foundMatrix(name))
 		g_matrices.at(name).multiplyRow(row, scalar);
 	else
@@ -469,7 +469,16 @@ equalExpression(const tokenlist_t& tokens)
 		auto it = A.begin();
 
 		while (std::getline(tokenize, num, ','))
-			*(it++) = std::stof(num);
+		{
+			if (num.find('/') != std::string::npos)
+			{
+				double n = std::stod(num.substr(0, num.find('/')));
+				double d = std::stod(num.substr(num.find('/') + 1));
+				*(it++) = n / d;
+			}
+			else
+				*(it++) = std::stod(num);
+		}
 		g_matrices[name] = A;
 	}
 	else
@@ -635,7 +644,7 @@ doOp(tokenstack_t& eval, tokenlist_t& results, const std::string& a, const std::
 	else if (foundMatrix(a) && isNumber(b))
 	{
 		if (op == '*')
-			g_matrices[resName] = g_matrices[a] * std::stof(b);
+			g_matrices[resName] = g_matrices[a] * std::stod(b);
 		else
 			error = true;
 		
@@ -645,7 +654,7 @@ doOp(tokenstack_t& eval, tokenlist_t& results, const std::string& a, const std::
 	else if (foundMatrix(b) && isNumber(a))
 	{
 		if (op == '*')
-			g_matrices[resName] = g_matrices[b] * std::stof(a);
+			g_matrices[resName] = g_matrices[b] * std::stod(a);
 		else
 			error = true;
 		
