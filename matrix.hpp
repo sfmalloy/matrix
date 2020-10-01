@@ -17,9 +17,10 @@
 #include <cmath>
 
 /**********************************************************************/
+using T = float;
+
 namespace mat 
 {
-  template<typename T>
   class matrix
   {
   public:
@@ -334,6 +335,7 @@ namespace mat
       return true;   
     }
 
+
   private:
     size_t m_rows;
     size_t m_cols;
@@ -352,10 +354,23 @@ namespace mat
   /**********************************************************************/
   // Global functions
 
+	std::ostream&
+	operator<<(std::ostream& output, const matrix& M)
+	{
+		output << std::left;
+		for (size_t i = 0; i < M.rows(); ++i)
+		{
+			for (size_t j = 0; j < M.cols(); ++j)
+				output << std::setw(10) << M(i, j) << ' ';
+			output << '\n';
+		}
+
+		return output;
+	}
+	
   // Gaussian elimination
-  template <typename T>
-  matrix<T>
-  rowEchelon(matrix<T> A)
+  matrix
+  rowEchelon(matrix A)
   {
     if (A.isRowEchelonForm())
       return A;
@@ -402,17 +417,14 @@ namespace mat
         if (elem != 0)
           A.addRows(currRow, i, -1.0 * elem);
       }
-
-			std::cout << A;
     }
 
     return A;
   }
 
   // Gauss-Jordan elimination
-  template <typename T>
-  matrix<T>
-  reducedRowEchelon(matrix<T> A)
+  matrix
+  reducedRowEchelon(matrix A)
   {
     A = rowEchelon(A);
 
@@ -437,12 +449,11 @@ namespace mat
 
     return A;
   }
-
-  template <typename T>
-  matrix<T>
-  transpose(const matrix<T>& A)
+  
+  matrix
+  transpose(const matrix& A)
   {
-    matrix<T> transposed(A.cols(), A.rows());
+    matrix transposed(A.cols(), A.rows());
     
     for (size_t i = 0; i < A.rows(); ++i)
       for (size_t j = 0; j < A.cols(); ++j)
@@ -451,9 +462,8 @@ namespace mat
     return transposed;
   }
 
-  template <typename T>
-  matrix<T>
-  inverse(matrix<T>& A)
+  matrix
+  inverse(matrix& A)
   {
     if (A.rows() != A.cols())
     {
@@ -461,7 +471,7 @@ namespace mat
       return A;
     }
 
-    matrix<T> augmented(A.rows(), 2 * A.cols());
+    matrix augmented(A.rows(), 2 * A.cols());
     
     for (size_t i = 0; i < A.rows(); ++i)
     {
@@ -472,8 +482,8 @@ namespace mat
         augmented(i, j) = j - A.cols() == i;
     }
 
-    matrix<T> reduced = reducedRowEchelon(augmented);
-    matrix<T> inverse(A.rows(), A.cols());
+    matrix reduced = reducedRowEchelon(augmented);
+    matrix inverse(A.rows(), A.cols());
 
     for (size_t i = 0; i < reduced.rows(); ++i)
       for (size_t j = A.cols(); j < reduced.cols(); ++j)
@@ -482,9 +492,8 @@ namespace mat
     return inverse;
   }
 
-  template <typename T>
-  matrix<T>
-  augment(const matrix<T>& A, const matrix<T>& B)
+  matrix
+  augment(const matrix& A, const matrix& B)
   {
     if (A.rows() != B.rows())
     {
@@ -492,7 +501,7 @@ namespace mat
       return A;
     }
 
-    matrix<T> augmented(A.rows(), A.cols() + B.cols());
+    matrix augmented(A.rows(), A.cols() + B.cols());
 
     for (size_t i = 0; i < A.rows(); ++i)
     {
@@ -506,20 +515,7 @@ namespace mat
     return augmented;
   }
 
-  template <typename T>
-  std::ostream&
-  operator<<(std::ostream& output, const matrix<T>& M)
-  {
-    output << std::left;
-    for (size_t i = 0; i < M.rows(); ++i)
-    {
-      for (size_t j = 0; j < M.cols(); ++j)
-        output << std::setw(10) << M(i, j) << ' ';
-      output << '\n';
-    }
-
-    return output;
-  }
+	
 } // namespace mat
 
 #endif // MATRIX_HPP
