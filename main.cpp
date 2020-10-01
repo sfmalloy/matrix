@@ -191,6 +191,9 @@ main()
 		
 		std::cout << "mat> ";
 	}
+	
+	if (line != "exit")
+		std::cout << '\n';
 
 	return 0;
 }
