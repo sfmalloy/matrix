@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <limits>
 #include <cmath>
+#include <tuple>
 
 /**********************************************************************/
 using T = double;
@@ -314,7 +315,13 @@ namespace mat
 		}
 
 		bool
-		isRowEchelonForm()
+		operator!=(const matrix& other) const
+		{
+			return !(*this == other);
+		}
+
+		bool
+		isRowEchelonForm() const
 		{
 			size_t prevCol = 0;
 			for (size_t i = 0; i < m_rows; ++i)
@@ -334,7 +341,15 @@ namespace mat
 
 			return true;	 
 		}
-
+		
+		bool
+		isZeroMatrix() const
+		{
+			for (const auto& elem : *this)
+				if (elem != 0)
+					return false;
+			return true;
+		}
 
 	private:
 		size_t m_rows;
@@ -347,8 +362,7 @@ namespace mat
 		almostEqual(T a, T b)
 		{
 			T diff = std::fabs(a - b);
-			return diff <= std::numeric_limits<T>::epsilon() * std::fabs(a + b) 
-							|| std::fabs(a - b) < std::numeric_limits<T>::min();
+			return diff <= std::numeric_limits<T>::epsilon();
 		}
 	};
 	/**********************************************************************/
@@ -515,7 +529,83 @@ namespace mat
 		return augmented;
 	}
 
-	
+	matrix
+	identity(size_t size)
+	{
+		mat::matrix A(size, size);
+		for (size_t i = 0; i < A.rows(); ++i)
+			for (size_t j = 0; j < A.cols(); ++j)
+				A(i, j) = i == j;
+
+	return A;
+	}
+
+	std::pair<matrix, matrix>
+	factor(matrix A)
+	{
+		if (A.isZeroMatrix())
+			return std::make_pair(identity(A.rows()), matrix(A.rows(), A.cols(), 0));
+
+		if (A.isRowEchelonForm())
+			return std::make_pair(identity(A.rows()), A);
+		
+		matrix L(A.rows(), A.rows());
+		for (size_t currTopRow = 0, currColL = 0; currTopRow < A.rows(); ++currTopRow, ++currColL)
+		{
+			size_t currRow = currTopRow;
+			size_t currCol = 0;
+			
+			bool found = false;
+
+			for (size_t j = 0; j < A.cols(); ++j)
+			{
+				for (size_t i = currTopRow; i < A.rows(); ++i)
+				{
+					if (A(i, j) != 0)
+					{
+						found = true;
+						currRow = i;
+						currCol = j;
+						break;
+					}
+				}
+
+				if (found)
+					break;
+			}
+
+			if (!found)
+			{
+				std::cerr << "Invalid matrix. \n";
+				return std::make_pair(identity(A.rows()), A);
+			}
+
+			if (currRow != currTopRow)
+			{
+				std::cerr << "Row swaps required, returning\n";
+				return std::make_pair(identity(A.rows()), A);
+			}
+
+			for (size_t i = 0; i < A.rows(); ++i)
+				L(i, currColL) = A(i, currCol);
+
+			T leadingElement = A(currRow, currCol);
+			if (leadingElement != 1)
+				A.multiplyRow(currRow, 1.0 / leadingElement);
+
+			for (size_t i = currRow + 1; i < A.rows(); ++i)
+			{
+				T elem = A(i, currCol);
+				if (elem != 0)
+					A.addRows(currRow, i, -elem);
+			}
+
+			std::cout << "something" << '\n';
+		}
+
+		return std::make_pair(L, A);
+	}
+
 } // namespace mat
 
 #endif // MATRIX_HPP

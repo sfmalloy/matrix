@@ -34,6 +34,7 @@ matmap_t g_matrices;
 
 // Used when converting math expressions from infix to postfix for
 // easy computation while keeping order of operations.
+// TODO add exponent operator
 const std::unordered_map<char, int> g_operatorPrecedence
 {
 	{'+', 1},
@@ -48,7 +49,7 @@ const std::unordered_map<char, int> g_operatorPrecedence
 /// \param tokens contains expression with name of matrix to print
 /// \note Error message printed if name specified in tokens does not exist.
 ///
-/// print <name>
+/// \note print <matrix>
 void
 printMatrix(const tokenlist_t& tokens);
 
@@ -62,7 +63,7 @@ identity(const tokenlist_t& tokens);
 /// \param tokens contains name of matrix to transpose
 /// \return Transposed matrix if matrix exists, otherwise empty matrix
 ///
-/// transpose <name>
+/// \note transpose <matrix>
 mat::matrix
 transpose(const tokenlist_t& tokens);
 
@@ -71,7 +72,7 @@ transpose(const tokenlist_t& tokens);
 /// \return Inverse of matrix if matrix exists and can be inverted, 
 ///		otherwise empty matrix.
 ///
-/// inverse <name>
+/// \note inverse <matrix>
 mat::matrix
 inverse(const tokenlist_t& tokens);
 
@@ -80,7 +81,7 @@ inverse(const tokenlist_t& tokens);
 /// \param tokens contains name of matrix to transform
 /// \return Matrix in row echelon form if it exists, otherwise empty matrix.
 ///
-/// row_echelon <name>
+/// \note row_echelon <matrix>
 mat::matrix
 rowEchelon(const tokenlist_t& tokens);
 
@@ -89,26 +90,49 @@ rowEchelon(const tokenlist_t& tokens);
 /// \param tokens contains name of matrix to transform
 /// \return Matrix in reduced row echelon form if it exists, otherwise empty matrix.
 ///
-/// reduced_row_echelon <name>
+/// \note reduced_row_echelon <matrix>
 mat::matrix
 reducedRowEchelon(const tokenlist_t& tokens);
 
 /// \brief Swap two rows in a matrix
 /// \param tokens contains name of matrix to swap two rows in
 /// 
-/// swap_rows <name> <row1> <row2>
+/// \note swap_rows <matrix> <row1> <row2>
 void
 swapRows(const tokenlist_t& tokens);
 
+/// \brief Augment one matrix to the end of another
+/// \param tokens contains name of matrices to combine
+///	\return New matrix where second matrix augmented onto 
+///		the end of first matrix.
+///
+///	\note augment <matrix1> <matrix2>
 mat::matrix
 augment(const tokenlist_t& tokens);
 
+/// \brief Adds two rows in a matrix together
+/// \param tokens contains name of matrix and two rows to add
+/// 
+/// \note add_rows <matrix> <r1> <r2>
 void
 addRows(const tokenlist_t& tokens);
 
+/// \brief Multiplies a row by a scalar constant.
+/// \param tokens contains name of matrix, followed by row, then scalar
+///
+/// \note multiply_row <matrix> <row> <scalar>
 void
 multiplyRow(const tokenlist_t& tokens);
 
+/// \brief Evaluates expression and stores result in matrix specified before
+///		the '=' sign. If matrix does not already exist, it is created. Otherwise
+///		the current matrix is overwritten.
+/// \param tokens contains name followed by an '=', and then an expression
+///		which can be either a new matrix defined using nested [] for each row,
+///		or any command or math expression (using +, -, *, and soon ^).
+///	
+/// \note <matrix> = [[a11,a12,...,a1N],...,[aM1,aM2,...,aMN]]
+/// \note <matrix> = <expression>
 void
 equalExpression(const tokenlist_t& tokens);
 
@@ -159,6 +183,15 @@ foundMatrix(const std::string& name);
 
 void
 doOp(tokenstack_t& eval, tokenlist_t& results, const std::string& a, const std::string& b, const std::string& opStr);
+
+void
+help();
+
+void
+printFactors(const tokenlist_t& tokens);
+
+void
+factor(const tokenlist_t& tokens);
 
 /**********************************************************************/
 
@@ -240,6 +273,10 @@ doCommand(const tokenlist_t& tokens)
 		return identity(tokens);
 	else if (tokens[0] == "augment")
 		return augment(tokens);
+	else if (tokens[0] == "help")
+		help();
+	else if (tokens[0] == "factor")
+		factor(tokens);
 	else if (tokens.size() > 1 && tokens[1] == "=")
 		equalExpression(tokens);
 	else if (g_matrices.find(tokens[0]) != g_matrices.end() || std::isdigit(tokens[0][0]) || tokens[0][0] == '(')
@@ -251,9 +288,30 @@ doCommand(const tokenlist_t& tokens)
 }
 
 void
+help()
+{
+	std::cout << "To be implemented...\n";
+}
+
+void
 printMatrix(const tokenlist_t& tokens)
-{	
-	std::cout << doCommand(tokenlist_t(tokens.begin() + 1, tokens.end()));
+{
+	auto result = doCommand(tokenlist_t(tokens.begin() + 1, tokens.end()));
+	if (result != mat::matrix())
+		std::cout << result;
+	if (tokens[1] == "factor")
+		printFactors(tokenlist_t(tokens.begin() + 1, tokens.end()));
+}
+
+void
+printFactors(const tokenlist_t& tokens)
+{
+	std::string name = tokens[1];
+	if (foundMatrix(name) && foundMatrix(name + "_L") && foundMatrix(name + "_U"))
+	{
+		std::cout << name << "_L =\n" << g_matrices.at(name + "_L") << '\n'
+							<< name << "_U =\n" << g_matrices.at(name + "_U");
+	}
 }
 
 mat::matrix
@@ -261,7 +319,7 @@ transpose(const tokenlist_t& tokens)
 {
 	if (tokens.size() != 2)
 	{
-		printUsage("transpose <name>");
+		printUsage("transpose <matrix>");
 		return mat::matrix();
 	}
 
@@ -277,7 +335,7 @@ inverse(const tokenlist_t& tokens)
 {
 	if (tokens.size() != 2)
 	{
-		printUsage("inverse <name>");
+		printUsage("inverse <matrix>");
 		return mat::matrix();
 	}
 
@@ -295,7 +353,7 @@ rowEchelon(const tokenlist_t& tokens)
 {
 	if (tokens.size() != 2)
 	{
-		printUsage("row_echelon <name>");
+		printUsage("row_echelon <matrix>");
 		return mat::matrix();
 	}
 	
@@ -313,7 +371,7 @@ reducedRowEchelon(const tokenlist_t& tokens)
 {
 	if (tokens.size() != 2)
 	{
-		printUsage("reduced_row_echelon <name>");
+		printUsage("reduced_row_echelon <matrix>");
 		return mat::matrix();
 	}
 
@@ -331,7 +389,7 @@ augment(const tokenlist_t& tokens)
 {
 	if (tokens.size() != 3)
 	{
-		printUsage("augment <name1> <name2>");
+		printUsage("augment <matrix1> <matrix2>");
 		return mat::matrix();
 	}
 
@@ -350,7 +408,7 @@ swapRows(const tokenlist_t& tokens)
 {
 	if (tokens.size() != 3)
 	{
-		printUsage("swap_rows <name> <r1> <r2>");
+		printUsage("swap_rows <matrix> <r1> <r2>");
 		return;
 	}
 
@@ -368,7 +426,7 @@ addRows(const tokenlist_t& tokens)
 {
 	if (tokens.size() != 4)
 	{
-		printUsage("add_rows <name> <row1> <row2>");
+		printUsage("add_rows <matrix> <row1> <row2>");
 		return;
 	}
 
@@ -386,7 +444,7 @@ multiplyRow(const tokenlist_t& tokens)
 {
 	if (tokens.size() != 4)
 	{
-		printUsage("multiply_row <name> <scalar> <row>");
+		printUsage("multiply_row <matrix> <row> <scalar>");
 		return;
 	}
 
@@ -413,7 +471,7 @@ random(const tokenlist_t& tokens)
 	size_t lowerBound = std::stoul(tokens[3]);
 	size_t upperBound = std::stoul(tokens[4]);
 	
-	if (tokens.size() == 8)
+	if (tokens.size() == 6)
 	{
 		unsigned long seed = std::stoul(tokens[5]);
 		return getRandom(rows, cols, lowerBound, upperBound, seed);
@@ -432,7 +490,26 @@ identity(const tokenlist_t& tokens)
 	}
 
 	size_t size = std::stoul(tokens[1]);
-	return getIdentity(size);
+	return mat::identity(size);
+}
+
+void
+factor(const tokenlist_t& tokens)
+{
+	if (tokens.size() != 2)
+	{
+		printUsage("factor <matrix>");
+		return;
+	}
+
+	std::string name = tokens[1];
+
+	if (foundMatrix(name))
+	{
+		auto factors = mat::factor(g_matrices.at(name));
+		g_matrices[name + "_L"] = factors.first;
+		g_matrices[name + "_U"] = factors.second;
+	}
 }
 
 void
@@ -498,17 +575,6 @@ equalExpression(const tokenlist_t& tokens)
 	}
 	else
 		g_matrices[name] = doCommand(tokenlist_t(tokens.begin() + 2, tokens.end()));
-}
-
-mat::matrix
-getIdentity(size_t size)
-{
-	mat::matrix A(size, size);
-	for (size_t i = 0; i < A.rows(); ++i)
-		for (size_t j = 0; j < A.cols(); ++j)
-			A(i, j) = i == j;
-
-	return A;
 }
 
 mat::matrix
