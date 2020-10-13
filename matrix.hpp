@@ -215,13 +215,6 @@ namespace mat
 			return *this;
 		}
 
-		// matrix addition
-		matrix
-		operator+(const matrix& other) const
-		{
-			return matrix(*this) += other;
-		}
-		
 		// matrix subtraction
 		matrix&
 		operator-=(const matrix& other)
@@ -234,13 +227,6 @@ namespace mat
 			}
 
 			return *this;
-		}
-
-		// matrix subtraction
-		matrix
-		operator-(const matrix& other) const
-		{
-			return matrix(*this) -= other;
 		}
 
 		// matrix multiplication
@@ -263,61 +249,15 @@ namespace mat
 			return *this;
 		}
 
-		// matrix multiplication
-		matrix
-		operator*(const matrix& other) const
-		{
-			return matrix(*this) *= other;
-		}
-
 		// Scalar multiplication
 		matrix&
 		operator*=(const T& k)
 		{
 			for (auto& elem : *this)
-				elem *= k;
+				if (elem != 0)
+					elem *= k;
 			
 			return *this;
-		}
-
-		// Scalar multiplication
-		matrix
-		operator*(const T& k) const
-		{
-			return matrix(*this) *= k;
-		}
-
-		// Scalar multiplication
-		friend matrix
-		operator*(const T& k, const matrix& M)
-		{
-			return M * k;
-		}
-
-		bool
-		operator==(const matrix& other)
-		{
-			if (m_rows != other.rows() || m_cols != other.cols())
-				return false;
-
-			for (size_t i = 0; i < m_rows; ++i)
-				for (size_t j = 0; j < m_cols; ++j)
-					if ((*this)(i, j) != other(i, j))
-						return false;
-
-			return true;
-		}
-		
-		bool
-		operator==(const matrix& other) const
-		{
-			return *this == other;
-		}
-
-		bool
-		operator!=(const matrix& other) const
-		{
-			return !(*this == other);
 		}
 
 		bool
@@ -368,6 +308,45 @@ namespace mat
 	/**********************************************************************/
 	// Global functions
 
+	// matrix addition
+	matrix
+	operator+(const matrix& A, const matrix& B)
+	{
+		return (matrix) A += B;
+	}
+
+	matrix
+	operator-(const matrix& A, const matrix& B)
+	{
+		return (matrix) A -= B;
+	}
+
+	matrix
+	operator-(const matrix& A)
+	{
+		return (matrix) A *= -1;
+	}
+
+	// matrix multiplication
+	matrix
+	operator*(const matrix& A, const matrix& B)
+	{
+		return (matrix) A *= B;
+	}
+	
+	// scalar multiplicxation
+	matrix
+	operator*(const T& k, const matrix& M)
+	{
+		return (matrix) M *= k;
+	}
+
+	matrix
+	operator*(const matrix& M, const T& k)
+	{
+		return (matrix) M *= k;
+	}
+
 	std::ostream&
 	operator<<(std::ostream& output, const matrix& M)
 	{
@@ -380,6 +359,26 @@ namespace mat
 		}
 
 		return output;
+	}
+	
+	bool
+	operator==(const matrix& A, const matrix& B)
+	{
+		if (A.rows() != B.rows() || A.cols() != B.cols())
+			return false;
+
+		for (size_t i = 0; i < A.rows(); ++i)
+			for (size_t j = 0; j < A.cols(); ++j)
+				if (A(i, j) != B(i, j))
+					return false;
+
+		return true;
+	}
+
+	bool
+	operator!=(const matrix& A, const matrix& B)
+	{
+		return !(A == B);
 	}
 	
 	// Gaussian elimination
@@ -539,73 +538,6 @@ namespace mat
 
 	return A;
 	}
-
-	std::pair<matrix, matrix>
-	factor(matrix A)
-	{
-		if (A.isZeroMatrix())
-			return std::make_pair(identity(A.rows()), matrix(A.rows(), A.cols(), 0));
-
-		if (A.isRowEchelonForm())
-			return std::make_pair(identity(A.rows()), A);
-		
-		matrix L(A.rows(), A.rows());
-		for (size_t currTopRow = 0, currColL = 0; currTopRow < A.rows(); ++currTopRow, ++currColL)
-		{
-			size_t currRow = currTopRow;
-			size_t currCol = 0;
-			
-			bool found = false;
-
-			for (size_t j = 0; j < A.cols(); ++j)
-			{
-				for (size_t i = currTopRow; i < A.rows(); ++i)
-				{
-					if (A(i, j) != 0)
-					{
-						found = true;
-						currRow = i;
-						currCol = j;
-						break;
-					}
-				}
-
-				if (found)
-					break;
-			}
-
-			if (!found)
-			{
-				std::cerr << "Invalid matrix. \n";
-				return std::make_pair(identity(A.rows()), A);
-			}
-
-			if (currRow != currTopRow)
-			{
-				std::cerr << "Row swaps required, returning\n";
-				return std::make_pair(identity(A.rows()), A);
-			}
-
-			for (size_t i = 0; i < A.rows(); ++i)
-				L(i, currColL) = A(i, currCol);
-
-			T leadingElement = A(currRow, currCol);
-			if (leadingElement != 1)
-				A.multiplyRow(currRow, 1.0 / leadingElement);
-
-			for (size_t i = currRow + 1; i < A.rows(); ++i)
-			{
-				T elem = A(i, currCol);
-				if (elem != 0)
-					A.addRows(currRow, i, -elem);
-			}
-
-			std::cout << "something" << '\n';
-		}
-
-		return std::make_pair(L, A);
-	}
-
 } // namespace mat
 
 #endif // MATRIX_HPP

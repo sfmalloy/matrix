@@ -182,16 +182,10 @@ bool
 foundMatrix(const std::string& name);
 
 void
-doOp(tokenstack_t& eval, tokenlist_t& results, const std::string& a, const std::string& b, const std::string& opStr);
+doOp(tokenstack_t& eval, tokenlist_t& results, std::string a, std::string b, const std::string& opStr);
 
 void
 help();
-
-void
-printFactors(const tokenlist_t& tokens);
-
-void
-factor(const tokenlist_t& tokens);
 
 /**********************************************************************/
 
@@ -275,11 +269,9 @@ doCommand(const tokenlist_t& tokens)
 		return augment(tokens);
 	else if (tokens[0] == "help")
 		help();
-	else if (tokens[0] == "factor")
-		factor(tokens);
 	else if (tokens.size() > 1 && tokens[1] == "=")
 		equalExpression(tokens);
-	else if (g_matrices.find(tokens[0]) != g_matrices.end() || std::isdigit(tokens[0][0]) || tokens[0][0] == '(')
+	else if (g_matrices.find(tokens[0]) != g_matrices.end() || isNumber(tokens[0]) || tokens[0][0] == '(' || tokens[0][0] == '-')
 		return evaluate(tokens);
 	else
 		printError("Command does not exist.");
@@ -297,21 +289,7 @@ void
 printMatrix(const tokenlist_t& tokens)
 {
 	auto result = doCommand(tokenlist_t(tokens.begin() + 1, tokens.end()));
-	if (result != mat::matrix())
-		std::cout << result;
-	if (tokens[1] == "factor")
-		printFactors(tokenlist_t(tokens.begin() + 1, tokens.end()));
-}
-
-void
-printFactors(const tokenlist_t& tokens)
-{
-	std::string name = tokens[1];
-	if (foundMatrix(name) && foundMatrix(name + "_L") && foundMatrix(name + "_U"))
-	{
-		std::cout << name << "_L =\n" << g_matrices.at(name + "_L") << '\n'
-							<< name << "_U =\n" << g_matrices.at(name + "_U");
-	}
+	std::cout << result;
 }
 
 mat::matrix
@@ -424,17 +402,24 @@ swapRows(const tokenlist_t& tokens)
 void
 addRows(const tokenlist_t& tokens)
 {
-	if (tokens.size() != 4)
+	if (tokens.size() != 4 && tokens.size() != 5)
 	{
-		printUsage("add_rows <matrix> <row1> <row2>");
+		printUsage("add_rows <matrix> <row1> <row2> [<scalar>]");
 		return;
 	}
 
 	std::string name = tokens[1];
 	size_t r1 = std::stoul(tokens[2]);
 	size_t r2 = std::stoul(tokens[3]);
+	
+	double scalar;
+	if (tokens.size() == 5)
+		scalar = std::stod(tokens[4]);
+	else
+		scalar = 1.0;
+
 	if (foundMatrix(name))
-		g_matrices.at(name).addRows(r1, r2);
+		g_matrices.at(name).addRows(r1, r2, scalar);
 	else
 		printError("Matrix " + name + " not found");
 }
@@ -491,25 +476,6 @@ identity(const tokenlist_t& tokens)
 
 	size_t size = std::stoul(tokens[1]);
 	return mat::identity(size);
-}
-
-void
-factor(const tokenlist_t& tokens)
-{
-	if (tokens.size() != 2)
-	{
-		printUsage("factor <matrix>");
-		return;
-	}
-
-	std::string name = tokens[1];
-
-	if (foundMatrix(name))
-	{
-		auto factors = mat::factor(g_matrices.at(name));
-		g_matrices[name + "_L"] = factors.first;
-		g_matrices[name + "_U"] = factors.second;
-	}
 }
 
 void
@@ -600,6 +566,9 @@ getRandom(size_t rows, size_t cols, int lower, int upper, unsigned long seed)
 mat::matrix
 evaluate(const tokenlist_t& tokens)
 {
+	if (tokens.size() == 1 && tokens[0][0] == '-' && foundMatrix(tokens[0].substr(1)))
+		return -g_matrices[tokens[0].substr(1)];
+
 	tokenlist_t postfix = toPostfix(tokens);
 	tokenstack_t eval;
 	tokenlist_t results;
@@ -695,7 +664,7 @@ tokenizeMath(tokenlist_t tokens)
 }
 
 void
-doOp(tokenstack_t& eval, tokenlist_t& results, const std::string& a, const std::string& b, const std::string& opStr)
+doOp(tokenstack_t& eval, tokenlist_t& results, std::string a, std::string b, const std::string& opStr)
 {
 	char op = opStr[0];
 	bool error = false;
@@ -706,6 +675,22 @@ doOp(tokenstack_t& eval, tokenlist_t& results, const std::string& a, const std::
 	{
 		resId = rand() % 10000;
 		resName = "__result" + std::to_string(resId);
+	}
+
+	bool negatedA = false;
+	bool negatedB = false;
+
+	if (a[0] == '-' && a.size() > 1 && foundMatrix(a.substr(1)))
+	{
+		negatedA = true;
+		a = a.substr(1);
+		g_matrices[a] = -g_matrices[a];
+	}
+	if (b[0] == '-' && b.size() > 1 && foundMatrix(b.substr(1)))
+	{
+		negatedB = true;
+		b = b.substr(1);
+		g_matrices[b] = -g_matrices[b];
 	}
 
 	if (foundMatrix(a) && foundMatrix(b))
@@ -750,6 +735,11 @@ doOp(tokenstack_t& eval, tokenlist_t& results, const std::string& a, const std::
 		eval = tokenstack_t();
 		eval.push("__error");
 	}
+
+	if (negatedA)
+		g_matrices[a] = -g_matrices[a];
+	if (negatedB)
+		g_matrices[b] = -g_matrices[b];
 }
 
 void
@@ -788,12 +778,17 @@ bool
 isNumber(const std::string& token)
 {
 	bool foundDecimal = false;
+	bool foundNegative = false;
 	for (char c : token)
 	{
 		if (foundDecimal && c == '.')
 			return false;
 		else if (!foundDecimal && c == '.')
 			foundDecimal = true;
+		else if (foundNegative && c == '-')
+			return false;
+		else if (!foundNegative && c == '-')
+			foundNegative = true;
 		else if (!std::isdigit(c))
 			return false;
 	}
