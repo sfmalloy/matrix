@@ -110,6 +110,16 @@ swapRows(const tokenlist_t& tokens);
 mat::matrix
 augment(const tokenlist_t& tokens);
 
+mat::matrix
+minorMatrix(const tokenlist_t& tokens);
+
+mat::matrix
+determinant(const tokenlist_t& tokens);
+
+mat::matrix
+adjugate(const tokenlist_t& tokens);
+
+
 /// \brief Adds two rows in a matrix together
 /// \param tokens contains name of matrix and two rows to add
 /// 
@@ -251,9 +261,9 @@ doCommand(const tokenlist_t& tokens)
 		return transpose(tokens);
 	else if (tokens[0] == "inverse")
 		return inverse(tokens);
-	else if (tokens[0] == "row_echelon")
+	else if (tokens[0] == "row_echelon" || tokens[0] == "re")
 		return rowEchelon(tokens);
-	else if (tokens[0] == "reduced_row_echelon")
+	else if (tokens[0] == "reduced_row_echelon" || tokens[0] == "rre")
 		return reducedRowEchelon(tokens);
 	else if (tokens[0] == "swap_rows")
 		swapRows(tokens);
@@ -267,6 +277,12 @@ doCommand(const tokenlist_t& tokens)
 		return identity(tokens);
 	else if (tokens[0] == "augment")
 		return augment(tokens);
+	else if (tokens[0] == "minor")
+		return minorMatrix(tokens);
+	else if (tokens[0] == "determinant" || tokens[0] == "det")
+		return determinant(tokens);
+	else if (tokens[0] == "adjugate" || tokens[0] == "adj")
+		return adjugate(tokens);
 	else if (tokens[0] == "help")
 		help();
 	else if (tokens.size() > 1 && tokens[1] == "=")
@@ -381,6 +397,70 @@ augment(const tokenlist_t& tokens)
 	return mat::matrix();
 }
 
+mat::matrix
+minorMatrix(const tokenlist_t& tokens)
+{
+	if (tokens.size() != 4)
+	{
+		printUsage("minor <matrix> <row> <col>");
+		return mat::matrix();
+	}
+
+	std::string name = tokens[1];
+	std::string row = tokens[2];
+	std::string col = tokens[3];
+	if (foundMatrix(name))
+		return mat::minorMatrix(g_matrices.at(name), std::stod(row), std::stod(col));
+	else
+		printError("Matrix not found");
+
+	return mat::matrix();
+}
+
+// TODO implement number map so I don't need to return a 1x1 matrix for this to
+// work properly in the interpreter
+mat::matrix
+determinant(const tokenlist_t& tokens)
+{
+	if (tokens.size() != 2)
+	{
+		printUsage("determinant <matrix>");
+		printUsage("det <matrix>");
+		return mat::matrix();
+	}
+
+	std::string name = tokens[1];
+	if (foundMatrix(name))
+	{
+		mat::matrix result(1, 1);
+		result(0, 0) = mat::determinant(g_matrices.at(name));
+		return result;
+	}
+	else
+		printError("Matrix not found");
+
+	return mat::matrix();
+}
+
+mat::matrix
+adjugate(const tokenlist_t& tokens)
+{
+	if (tokens.size() != 2)
+	{
+		printUsage("adjugate <matrix>");
+		printUsage("adj <matrix>");
+		return mat::matrix();
+	}
+
+	std::string name = tokens[1];
+	if (foundMatrix(name))
+		return mat::adjugate(g_matrices.at(name));
+	else
+		printError("Matrix not found");
+
+	return mat::matrix();
+}
+
 void
 swapRows(const tokenlist_t& tokens)
 {
@@ -435,7 +515,7 @@ multiplyRow(const tokenlist_t& tokens)
 
 	std::string name = tokens[1];
 	size_t row = std::stoul(tokens[2]);
-	T scalar = std::stod(tokens[3]);
+	elem_t scalar = std::stod(tokens[3]);
 	if (foundMatrix(name))
 		g_matrices.at(name).multiplyRow(row, scalar);
 	else
@@ -557,7 +637,7 @@ getRandom(size_t rows, size_t cols, int lower, int upper, unsigned long seed)
 	std::uniform_int_distribution<int> dist(lower, upper);
 	
 	mat::matrix A(rows, cols);
-	for (T& elem : A)
+	for (elem_t& elem : A)
 		elem = dist(gen);
 
 	return A;

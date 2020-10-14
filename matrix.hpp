@@ -8,17 +8,15 @@
 
 /**********************************************************************/
 // System includes
-#include <cstddef>
 #include <iostream>
 #include <iomanip>
 #include <iterator>
-#include <algorithm>
 #include <limits>
 #include <cmath>
 #include <tuple>
 
 /**********************************************************************/
-using T = double;
+typedef double elem_t;
 
 namespace mat 
 {
@@ -26,8 +24,8 @@ namespace mat
 	{
 	public:
 		// type aliases
-		using iterator = T*;
-		using const_iterator = const T*;
+		using iterator = elem_t*;
+		using const_iterator = const elem_t*;
 
 		// default ctor
 		matrix()
@@ -43,16 +41,16 @@ namespace mat
 			: m_rows(rows),
 				m_cols(cols),
 				m_size(rows * cols),
-				m_matrix(new T[m_size])
+				m_matrix(new elem_t[m_size])
 		{
 		}
 
 		// size ctor
-		matrix(size_t rows, size_t cols, T init)
+		matrix(size_t rows, size_t cols, elem_t init)
 			: m_rows(rows),
 				m_cols(cols),
 				m_size(rows * cols),
-				m_matrix(new T[m_size])
+				m_matrix(new elem_t[m_size])
 		{
 			for (auto& elem : *this)
 				elem = init;
@@ -63,7 +61,7 @@ namespace mat
 			: m_rows(m.rows()),
 				m_cols(m.cols()),
 				m_size(m.size()),
-				m_matrix(new T[m_size])
+				m_matrix(new elem_t[m_size])
 		{
 			if (this != &m)
 				std::copy(m.begin(), m.end(), begin());
@@ -83,7 +81,7 @@ namespace mat
 			{
 				if (m_matrix != nullptr)
 					delete[] m_matrix;
-				m_matrix = new T[m.rows() * m.cols()];
+				m_matrix = new elem_t[m.rows() * m.cols()];
 
 				std::copy(m.begin(), m.end(), begin());
 				m_size = m.size();
@@ -165,7 +163,7 @@ namespace mat
 
 		// Adds scalar * r1 to r2, changing the values in r2
 		void
-		addRows(size_t r1, size_t r2, T scalar = T(1))
+		addRows(size_t r1, size_t r2, elem_t scalar = 1)
 		{
 			if (r1 >= m_rows || r2 >= m_rows)
 				return;
@@ -179,20 +177,27 @@ namespace mat
 		}
 
 		void 
-		multiplyRow(size_t r, T scalar)
+		multiplyRow(size_t r, elem_t scalar)
 		{
 			for (size_t j = 0; j < m_cols; ++j)
 				if ((*this)(r, j) != 0)
 					(*this)(r, j) *= scalar;
 		}
+		
+		void
+		zero()
+		{
+			for (auto& elem : *this)
+				elem = 0.0;
+		}
 
-		T&
+		elem_t&
 		operator()(const size_t& row, const size_t& col)
 		{
 			return m_matrix[(m_cols * row) + col];
 		}
 
-		T&
+		elem_t
 		operator()(const size_t& row, const size_t& col) const
 		{
 			return m_matrix[(m_cols * row) + col];
@@ -235,7 +240,7 @@ namespace mat
 		{
 			if (m_cols == other.rows())
 			{
-				matrix result(m_rows, other.cols(), T(0));
+				matrix result(m_rows, other.cols(), elem_t(0));
 				for (size_t i = 0; i < result.rows(); ++i)
 					for (size_t j = 0; j < result.cols(); ++j)
 						for (size_t k = 0; k < m_cols; ++k)
@@ -251,7 +256,7 @@ namespace mat
 
 		// Scalar multiplication
 		matrix&
-		operator*=(const T& k)
+		operator*=(const elem_t& k)
 		{
 			for (auto& elem : *this)
 				if (elem != 0)
@@ -268,7 +273,7 @@ namespace mat
 			{
 				for (size_t j = 0; j < m_cols; ++j)
 				{
-					T elem = (*this)(i, j);
+					elem_t elem = (*this)(i, j);
 					if (elem == 1 && j > prevCol)
 					{
 						prevCol = j;
@@ -296,18 +301,25 @@ namespace mat
 		size_t m_cols;
 		size_t m_size;
 
-		T* m_matrix;
-
+		elem_t* m_matrix;
+		
 		bool
-		almostEqual(T a, T b)
+		almostEqual(elem_t a, elem_t b)
 		{
-			T diff = std::fabs(a - b);
-			return diff <= std::numeric_limits<T>::epsilon();
+			elem_t diff = std::fabs(a - b);
+			return diff <= std::numeric_limits<elem_t>::epsilon();
 		}
 	};
 	/**********************************************************************/
 	// Global functions
 
+	bool
+	almostEqual(elem_t a, elem_t b)
+	{
+		elem_t diff = std::fabs(a - b);
+		return diff <= std::numeric_limits<elem_t>::epsilon();
+	}
+	
 	// matrix addition
 	matrix
 	operator+(const matrix& A, const matrix& B)
@@ -334,27 +346,27 @@ namespace mat
 		return (matrix) A *= B;
 	}
 	
-	// scalar multiplicxation
+	// scalar multiplication
 	matrix
-	operator*(const T& k, const matrix& M)
+	operator*(const elem_t& k, const matrix& A)
 	{
-		return (matrix) M *= k;
+		return (matrix) A *= k;
 	}
 
 	matrix
-	operator*(const matrix& M, const T& k)
+	operator*(const matrix& A, const elem_t& k)
 	{
-		return (matrix) M *= k;
+		return (matrix) A *= k;
 	}
 
 	std::ostream&
-	operator<<(std::ostream& output, const matrix& M)
+	operator<<(std::ostream& output, const matrix& A)
 	{
 		output << std::left;
-		for (size_t i = 0; i < M.rows(); ++i)
+		for (size_t i = 0; i < A.rows(); ++i)
 		{
-			for (size_t j = 0; j < M.cols(); ++j)
-				output << std::setw(10) << M(i, j) << ' ';
+			for (size_t j = 0; j < A.cols(); ++j)
+				output << std::setw(10) << A(i, j) << ' ';
 			output << '\n';
 		}
 
@@ -369,7 +381,7 @@ namespace mat
 
 		for (size_t i = 0; i < A.rows(); ++i)
 			for (size_t j = 0; j < A.cols(); ++j)
-				if (A(i, j) != B(i, j))
+				if (!almostEqual(A(i, j), B(i, j)))
 					return false;
 
 		return true;
@@ -420,13 +432,13 @@ namespace mat
 				currRow = currTopRow;
 			}
 
-			T leadingElement = A(currRow, currCol);
+			elem_t leadingElement = A(currRow, currCol);
 			if (leadingElement != 1)
 				A.multiplyRow(currRow, 1.0 / leadingElement);
 
 			for (size_t i = currRow + 1; i < A.rows(); ++i)
 			{
-				T elem = A(i, currCol);
+				elem_t elem = A(i, currCol);
 				if (elem != 0)
 					A.addRows(currRow, i, -elem);
 			}
@@ -536,8 +548,73 @@ namespace mat
 			for (size_t j = 0; j < A.cols(); ++j)
 				A(i, j) = i == j;
 
-	return A;
+		return A;
 	}
+
+	matrix
+	zero()
+	{
+		return matrix();
+	}
+
+	// can't call this function minor because of a naming conflict with a C macro
+	matrix
+	minorMatrix(const matrix& A, size_t r, size_t c)
+	{
+		if (A.rows() == 1 || A.cols() == 1)
+			return A;
+
+		matrix M = matrix(A.rows() - 1, A.cols() - 1);
+		auto it = M.begin();
+
+		for (size_t i = 0; i < A.rows(); ++i)
+			for (size_t j = 0; j < A.cols(); ++j)
+				if (i != r && j != c)
+					*(it++) = A(i, j);
+
+		return M;
+	}
+
+	elem_t
+	determinant(const matrix& A)
+	{
+		if (A.rows() != A.cols())
+		{
+			std::cerr << "Determinant not defined, returning 0\n";
+			return 0;
+		}
+
+		if (A.rows() == 2)
+			return (A(0, 0) * A(1, 1)) - (A(0, 1) * A(1, 0));
+
+		elem_t det = 0, sign = 1;
+		for (size_t j = 0; j < A.cols(); ++j)
+		{
+			det += sign * A(0, j) * determinant(minorMatrix(A, 0, j));
+			sign *= -1;
+		}
+
+		return det;
+	}
+	
+	matrix
+	adjugate(const matrix& A)
+	{
+		matrix C(A.rows(), A.cols());
+		elem_t sign = 1;
+		for (size_t i = 0; i < C.rows(); ++i)
+		{
+			for (size_t j = 0; j < C.cols(); ++j)
+			{
+				C(i, j) = sign * determinant(minorMatrix(A, i, j));
+				sign *= -1;
+			}
+			sign *= -1;
+		}
+
+		return mat::transpose(C);
+	}
+
 } // namespace mat
 
 #endif // MATRIX_HPP
