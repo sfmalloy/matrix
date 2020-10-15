@@ -59,6 +59,9 @@ random(const tokenlist_t& tokens);
 mat::matrix
 identity(const tokenlist_t& tokens);
 
+mat::matrix
+zero(const tokenlist_t& tokens);
+
 /// \brief Swaps ros and columns of given matrix
 /// \param tokens contains name of matrix to transpose
 /// \return Transposed matrix if matrix exists, otherwise empty matrix
@@ -154,9 +157,6 @@ repl(std::istream& input);
 
 mat::matrix
 doCommand(const tokenlist_t& tokens);
-
-mat::matrix
-getIdentity(size_t size);
 
 mat::matrix
 getRandom(size_t rows, size_t cols, int lower, int upper);
@@ -275,6 +275,8 @@ doCommand(const tokenlist_t& tokens)
 		return random(tokens);
 	else if (tokens[0] == "identity")
 		return identity(tokens);
+	else if (tokens[0] == "zero")
+		return zero(tokens);
 	else if (tokens[0] == "augment")
 		return augment(tokens);
 	else if (tokens[0] == "minor")
@@ -417,8 +419,6 @@ minorMatrix(const tokenlist_t& tokens)
 	return mat::matrix();
 }
 
-// TODO implement number map so I don't need to return a 1x1 matrix for this to
-// work properly in the interpreter
 mat::matrix
 determinant(const tokenlist_t& tokens)
 {
@@ -556,6 +556,20 @@ identity(const tokenlist_t& tokens)
 
 	size_t size = std::stoul(tokens[1]);
 	return mat::identity(size);
+}
+
+mat::matrix
+zero(const tokenlist_t& tokens)
+{
+	if (tokens.size() != 3)
+	{
+		printUsage("zero <rows> <cols>");
+		return mat::matrix();
+	}
+
+	size_t rows = std::stoul(tokens[1]);
+	size_t cols = std::stoul(tokens[2]);
+	return mat::zero(rows, cols);
 }
 
 void

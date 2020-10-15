@@ -552,9 +552,9 @@ namespace mat
 	}
 
 	matrix
-	zero()
+	zero(size_t rows, size_t cols)
 	{
-		return matrix();
+		return matrix(rows, cols, 0);
 	}
 
 	// can't call this function minor because of a naming conflict with a C macro
