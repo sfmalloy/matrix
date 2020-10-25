@@ -3,8 +3,7 @@
 ///\brief  Generic matrix class for performing various matrix operations.
 /**********************************************************************/
 // Macro guard
-#ifndef MATRIX_HPP
-#define MATRIX_HPP
+#pragma once
 
 /**********************************************************************/
 // System includes
@@ -14,11 +13,12 @@
 #include <limits>
 #include <cmath>
 #include <tuple>
+#include <algorithm>
 
 /**********************************************************************/
 typedef double elem_t;
 
-namespace mat 
+namespace mat
 {
 	class matrix
 	{
@@ -256,12 +256,23 @@ namespace mat
 
 		// Scalar multiplication
 		matrix&
-		operator*=(const elem_t& k)
+		operator*=(elem_t k)
 		{
 			for (auto& elem : *this)
 				if (elem != 0)
 					elem *= k;
 			
+			return *this;
+		}
+
+		matrix&
+		operator^=(unsigned long k)
+		{
+			matrix res = *this;
+			for (unsigned long i = 1; i < k; ++i)
+				res *= *this;
+			
+			*this = res;
 			return *this;
 		}
 
@@ -348,15 +359,21 @@ namespace mat
 	
 	// scalar multiplication
 	matrix
-	operator*(const elem_t& k, const matrix& A)
+	operator*(elem_t k, const matrix& A)
 	{
 		return (matrix) A *= k;
 	}
 
 	matrix
-	operator*(const matrix& A, const elem_t& k)
+	operator*(const matrix& A, elem_t k)
 	{
 		return (matrix) A *= k;
+	}
+
+	matrix
+	operator^(const matrix& A, unsigned long k)
+	{
+		return (matrix) A ^= k;
 	}
 
 	std::ostream&
@@ -616,5 +633,3 @@ namespace mat
 	}
 
 } // namespace mat
-
-#endif // MATRIX_HPP

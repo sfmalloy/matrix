@@ -39,7 +39,8 @@ const std::unordered_map<char, int> g_operatorPrecedence
 {
 	{'+', 1},
 	{'-', 1},
-	{'*', 2}
+	{'*', 2},
+	{'^', 3}
 };
 
 /**********************************************************************/
@@ -634,7 +635,11 @@ equalExpression(const tokenlist_t& tokens)
 		g_matrices[name] = A;
 	}
 	else
-		g_matrices[name] = doCommand(tokenlist_t(tokens.begin() + 2, tokens.end()));
+	{
+		mat::matrix res = doCommand(tokenlist_t(tokens.begin() + 2, tokens.end()));
+		if (res != mat::matrix())
+			g_matrices[name] = res;
+	}
 }
 
 mat::matrix
@@ -805,6 +810,8 @@ doOp(tokenstack_t& eval, tokenlist_t& results, std::string a, std::string b, con
 	{
 		if (op == '*')
 			g_matrices[resName] = g_matrices[a] * std::stod(b);
+		else if (op == '^')
+			g_matrices[resName] = g_matrices[a] ^ std::stoul(b);
 		else
 			error = true;
 		
