@@ -6,3 +6,4 @@ main.out
 *.json
 *.txt
 Makefile
+*.py

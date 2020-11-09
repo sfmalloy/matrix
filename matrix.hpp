@@ -1,6 +1,10 @@
 ///\author Sean Malloy
 ///\name	 matrix.hpp
 ///\brief  Generic matrix class for performing various matrix operations.
+/// TODO
+///   - create 'None' constant to be used for error checking
+///       mat::matrix::none similar to std::string::npos or 'None' in python
+
 /**********************************************************************/
 // Macro guard
 #pragma once
@@ -505,77 +509,6 @@ namespace mat
 	}
 
 	matrix
-	inverse(matrix& A)
-	{
-		if (A.rows() != A.cols())
-		{
-			std::cerr << "Inverse does not exist.\n";
-			return A;
-		}
-
-		matrix augmented(A.rows(), 2 * A.cols());
-		
-		for (size_t i = 0; i < A.rows(); ++i)
-		{
-			for (size_t j = 0; j < A.cols(); ++j)
-				augmented(i, j) = A(i, j);
-			
-			for (size_t j = A.cols(); j < augmented.cols(); ++j)
-				augmented(i, j) = j - A.cols() == i;
-		}
-
-		matrix reduced = reducedRowEchelon(augmented);
-		matrix inverse(A.rows(), A.cols());
-
-		for (size_t i = 0; i < reduced.rows(); ++i)
-			for (size_t j = A.cols(); j < reduced.cols(); ++j)
-				inverse(i, j - A.cols()) = reduced(i, j);
-
-		return inverse;
-	}
-
-	matrix
-	augment(const matrix& A, const matrix& B)
-	{
-		if (A.rows() != B.rows())
-		{
-			std::cerr << "Number of rows not equal.\n";
-			return A;
-		}
-
-		matrix augmented(A.rows(), A.cols() + B.cols());
-
-		for (size_t i = 0; i < A.rows(); ++i)
-		{
-			size_t j;
-			for (j = 0; j < A.cols(); ++j)
-				augmented(i, j) = A(i, j);
-			for ( ; j < augmented.cols(); ++j)
-				augmented(i, j) = B(i, j - A.cols());
-		}
-
-		return augmented;
-	}
-
-	matrix
-	identity(size_t size)
-	{
-		mat::matrix A(size, size);
-		for (size_t i = 0; i < A.rows(); ++i)
-			for (size_t j = 0; j < A.cols(); ++j)
-				A(i, j) = i == j;
-
-		return A;
-	}
-
-	matrix
-	zero(size_t rows, size_t cols)
-	{
-		return matrix(rows, cols, 0);
-	}
-
-	// can't call this function minor because of a naming conflict with a C macro
-	matrix
 	minorMatrix(const matrix& A, size_t r, size_t c)
 	{
 		if (A.rows() == 1 || A.cols() == 1)
@@ -631,4 +564,76 @@ namespace mat
 
 		return mat::transpose(C);
 	}
+
+	matrix
+	inverse(matrix& A)
+	{
+		if (A.rows() != A.cols() || determinant(A) == 0)
+		{
+			std::cerr << "Inverse does not exist.\n";
+			return A;
+		}
+
+		matrix augmented(A.rows(), 2 * A.cols());
+		
+		for (size_t i = 0; i < A.rows(); ++i)
+		{
+			for (size_t j = 0; j < A.cols(); ++j)
+				augmented(i, j) = A(i, j);
+			
+			for (size_t j = A.cols(); j < augmented.cols(); ++j)
+				augmented(i, j) = j - A.cols() == i;
+		}
+
+		matrix reduced = reducedRowEchelon(augmented);
+		matrix inverse(A.rows(), A.cols());
+
+		for (size_t i = 0; i < reduced.rows(); ++i)
+			for (size_t j = A.cols(); j < reduced.cols(); ++j)
+				inverse(i, j - A.cols()) = reduced(i, j);
+
+		return inverse;
+	}
+
+	matrix
+	augment(const matrix& A, const matrix& B)
+	{
+		if (A.rows() != B.rows())
+		{
+			std::cerr << "Number of rows not equal.\n";
+			return A;
+		}
+
+		matrix augmented(A.rows(), A.cols() + B.cols());
+
+		for (size_t i = 0; i < A.rows(); ++i)
+		{
+			size_t j;
+			for (j = 0; j < A.cols(); ++j)
+				augmented(i, j) = A(i, j);
+			for ( ; j < augmented.cols(); ++j)
+				augmented(i, j) = B(i, j - A.cols());
+		}
+
+		return augmented;
+	}
+
+	// can't call this function minor because of a naming conflict with a C macro
+	matrix
+	identity(size_t size)
+	{
+		mat::matrix A(size, size);
+		for (size_t i = 0; i < A.rows(); ++i)
+			for (size_t j = 0; j < A.cols(); ++j)
+				A(i, j) = i == j;
+
+		return A;
+	}
+
+	matrix
+	zero(size_t rows, size_t cols)
+	{
+		return matrix(rows, cols, 0);
+	}
+
 } // namespace mat

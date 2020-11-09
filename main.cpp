@@ -66,6 +66,9 @@ identity(const tokenlist_t& tokens);
 mat::matrix
 zero(const tokenlist_t& tokens);
 
+mat::matrix
+mod(const tokenlist_t& tokens);
+
 /// \brief Swaps ros and columns of given matrix
 /// \param tokens contains name of matrix to transpose
 /// \return Transposed matrix if matrix exists, otherwise empty matrix
@@ -293,6 +296,8 @@ doCommand(const tokenlist_t& tokens)
 		help();
   else if (tokens[0] == "newline")
     printNewline();
+  else if (tokens[0] == "mod")
+    return mod(tokens);
 	else if (tokens.size() > 1 && tokens[1] == "=")
 		equalExpression(tokens);
 	else if (g_matrices.find(tokens[0]) != g_matrices.end() || isNumber(tokens[0]) || tokens[0][0] == '(' || tokens[0][0] == '-')
@@ -582,6 +587,30 @@ zero(const tokenlist_t& tokens)
 	size_t rows = std::stoul(tokens[1]);
 	size_t cols = std::stoul(tokens[2]);
 	return mat::zero(rows, cols);
+}
+
+mat::matrix
+mod(const tokenlist_t& tokens)
+{
+  if (tokens.size() != 3)
+  {
+    printUsage("mod <name> <number>");
+    return mat::matrix();
+  }
+
+  std::string name = tokens[1];
+  unsigned long num = std::stoul(tokens[2]);
+  
+  mat::matrix modMatrix(g_matrices[name].rows(), g_matrices[name].cols());
+  if (foundMatrix(name))
+  {
+    auto ptr = g_matrices[name].begin();
+    for (auto& elem : modMatrix)
+      elem = (double) ((unsigned long) *(ptr++) % num);
+    return modMatrix;
+  }
+
+  return mat::matrix();
 }
 
 void
