@@ -54,6 +54,9 @@ const std::unordered_map<char, int> g_operatorPrecedence
 void
 printMatrix(const tokenlist_t& tokens);
 
+void
+printNewline();
+
 mat::matrix
 random(const tokenlist_t& tokens);
 
@@ -288,6 +291,8 @@ doCommand(const tokenlist_t& tokens)
 		return adjugate(tokens);
 	else if (tokens[0] == "help")
 		help();
+  else if (tokens[0] == "newline")
+    printNewline();
 	else if (tokens.size() > 1 && tokens[1] == "=")
 		equalExpression(tokens);
 	else if (g_matrices.find(tokens[0]) != g_matrices.end() || isNumber(tokens[0]) || tokens[0][0] == '(' || tokens[0][0] == '-')
@@ -309,6 +314,12 @@ printMatrix(const tokenlist_t& tokens)
 {
 	auto result = doCommand(tokenlist_t(tokens.begin() + 1, tokens.end()));
 	std::cout << result;
+}
+
+void
+printNewline()
+{
+  std::cout << '\n';
 }
 
 mat::matrix

@@ -631,5 +631,4 @@ namespace mat
 
 		return mat::transpose(C);
 	}
-
 } // namespace mat

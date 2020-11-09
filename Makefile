@@ -22,8 +22,13 @@ CXXFLAGS := -O3 -Wall
 # Rules                                                     #
 #############################################################
 
-driver.out: main.cpp 
+all: driver.out
+
+driver.out: main.cpp
 	$(CXX) $(CXXFLAGS) $^ -o $@
+
+matrix: main.cpp
+	sudo $(CXX) $(CXXFLAGS) $^ -o /usr/bin/$@
 
 #############################################################
 
