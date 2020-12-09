@@ -635,5 +635,28 @@ namespace mat
 	{
 		return matrix(rows, cols, 0);
 	}
+  
+	elem_t
+	rowLength(size_t row, matrix A)
+	{
+		elem_t sum = 0;
+		for (size_t j = 0; j < A.cols(); ++j)
+			sum += A(row, j);
+		return sqrt(sum);
+	}
 
+  matrix
+  cholesky(matrix A)
+  {
+    // Use row adds to get matrix to be upper triangular
+    // Divide each row by the diagonal entry in that row
+		for (size_t i = 0; i < A.cols(); ++i)
+		{
+			for (size_t j = i + 1; j < A.rows(); ++j)
+				A.addRows(i, j, -A(j,i)/A(i,i));
+			A.multiplyRow(i, 1 / sqrt(A(i,i)));
+		}
+
+		return A;
+  }
 } // namespace mat

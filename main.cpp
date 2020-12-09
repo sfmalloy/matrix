@@ -159,6 +159,8 @@ equalExpression(const tokenlist_t& tokens);
 /**********************************************************************/
 // Helper function declarations
 
+long
+euclidMod(long a, long b);
 void
 repl(std::istream& input);
 
@@ -203,6 +205,9 @@ doOp(tokenstack_t& eval, tokenlist_t& results, std::string a, std::string b, con
 
 void
 help();
+
+mat::matrix
+cholesky(const tokenlist_t& tokens);
 
 /**********************************************************************/
 
@@ -288,6 +293,8 @@ doCommand(const tokenlist_t& tokens)
 		return augment(tokens);
 	else if (tokens[0] == "minor")
 		return minorMatrix(tokens);
+	else if (tokens[0] == "cholesky")
+		return cholesky(tokens);
 	else if (tokens[0] == "determinant" || tokens[0] == "det")
 		return determinant(tokens);
 	else if (tokens[0] == "adjugate" || tokens[0] == "adj")
@@ -590,6 +597,21 @@ zero(const tokenlist_t& tokens)
 }
 
 mat::matrix
+cholesky(const tokenlist_t& tokens)
+{
+	if (tokens.size() != 2)
+	{
+		printUsage("cholesky <matrix>");
+		return mat::matrix();
+	}
+
+	std::string name = tokens[1];
+	if (foundMatrix(name))
+		return mat::cholesky(g_matrices[name]);
+	return mat::matrix();
+}
+
+mat::matrix
 mod(const tokenlist_t& tokens)
 {
   if (tokens.size() != 3)
@@ -606,11 +628,21 @@ mod(const tokenlist_t& tokens)
   {
     auto ptr = g_matrices[name].begin();
     for (auto& elem : modMatrix)
-      elem = (double) ((unsigned long) *(ptr++) % num);
+      elem = (double) (euclidMod((long) *(ptr++), num));
     return modMatrix;
   }
 
   return mat::matrix();
+}
+
+// TODO make this more efficient
+long
+euclidMod(long a, long b)
+{
+  while (a < 0) 
+    a += b;
+
+  return a % b;
 }
 
 void
