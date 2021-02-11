@@ -1,5 +1,5 @@
 # Matrix
-Matrix class with operations for C++
+Matrix class with operations for C++.
 
 ### Requirements
 - g++
@@ -10,8 +10,3 @@ Matrix class with operations for C++
 
 ### Using `matrix.hpp`
 You can choose to either use `main.cpp` to do matrix operations, or use matrix.hpp in your own C++ programs. It is a single header, just include it and you're set.
-
-### TODO
-- complete rework of `main.cpp`
-- create `vector.hpp`
-- cleanup and comment `matrix.hpp`
