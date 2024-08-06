@@ -6,7 +6,4 @@ Matrix class with operations for C++.
 - make
 
 ### Compiling and running
-`main.cpp` interpreter is proof of concept for how `matrix.hpp` can be used. Will eventually be reworked to be more robust for general matrix algebra use.
-
-### Using `matrix.hpp`
-You can choose to either use `main.cpp` to do matrix operations, or use matrix.hpp in your own C++ programs. It is a single header, just include it and you're set.
+`matrix.hpp` is the one and only header that you need to start making programs with different matrix operations. A proof-of-concept interpreter is implemented in `main.cpp`, and is mostly used to showcase the functionality of the `matrix.hpp` header.
